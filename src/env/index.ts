@@ -6,6 +6,8 @@ dotenv.config();
 const schema = z.object({
   BOT_TOKEN: z.string(),
   PINECONE_API_KEY: z.string(),
+  PINECONE_INDEX: z.string(),
+  OPENAI_API_KEY: z.string(),
 });
 
 const parsed = schema.safeParse(process.env);
