@@ -18,7 +18,7 @@ export const getMatches = async (message: string, fileId: string) => {
           id: PrismaVectorStore.IdColumn,
         },
         filter: {
-          namespace: {
+          fileId: {
             equals: fileId,
           },
         },

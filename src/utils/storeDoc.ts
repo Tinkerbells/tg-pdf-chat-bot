@@ -29,7 +29,10 @@ export const storeDoc = async (pages: PDFPage[], fileId: string) => {
       await db.$transaction(
         documents.map((content) =>
           db.document.create({
-            data: { content: content[0].pageContent, namespace: fileId },
+            data: {
+              content: content[0].pageContent,
+              fileId: fileId,
+            },
           }),
         ),
       ),
