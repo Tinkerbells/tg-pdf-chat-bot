@@ -1,96 +1,84 @@
 import { Bot, Context, session, SessionFlavor } from "grammy";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { FileFlavor, hydrateFiles } from "@grammyjs/files";
-import { checkIsPdf, createAssistantPrompt, createTmpPath } from "./helpers";
+import { ScenesSessionData, ScenesFlavor } from "grammy-scenes";
+import { checkIsPdf, createTmpPath } from "./helpers";
 import { env } from "./env";
 import { db } from "./db";
-import { getMatches, parsePdf, storeDoc } from "./utils";
+import { parsePdf, storeDoc } from "./utils";
 import {
-  Conversation,
   ConversationFlavor,
   conversations,
   createConversation,
 } from "@grammyjs/conversations";
-import { openai } from "./lib";
-
-type MessageType = {
-  text: string;
-  isUserMessage: boolean;
-};
+import { chat } from "./conversations";
 
 interface SessionData {
-  files: number;
+  fileId: string | null;
+  sessionId: string | null;
 }
 
-type MyContext = FileFlavor<Context> &
-  SessionFlavor<SessionData> &
+export type BotContext = FileFlavor<Context> &
+  SessionFlavor<ScenesSessionData & SessionData> &
+  ScenesFlavor &
   ConversationFlavor;
 
-type ChatPdfConversation = Conversation<MyContext>;
-
-async function chat(conversation: ChatPdfConversation, ctx: MyContext) {
-  await ctx.reply("The chat is started");
-  const { message } = await conversation.wait();
-  if (message.text) {
-    if (message.text.match("/")) {
-      return;
-    }
-    if (message.text) {
-      console.log("Message recieved:", message.text);
-      const results = await getMatches(message.text);
-      const context = results
-        .map((r) => r.pageContent)
-        .join("\n\n")
-        .slice(0, 3800);
-
-      const assistantPrompt = createAssistantPrompt(context);
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        temperature: 0,
-        messages: [
-          { role: "assistant", content: assistantPrompt },
-          { role: "user", content: message.text },
-        ],
-      });
-
-      ctx.reply(response.choices[0].message.content);
-    }
-  }
-}
-
 async function bootstrap() {
-  const bot = new Bot<MyContext>(env.BOT_TOKEN);
+  const bot = new Bot<BotContext>(env.BOT_TOKEN);
 
   bot.api.config.use(hydrateFiles(bot.token));
 
   bot.use(
     session({
       storage: new PrismaAdapter<SessionData>(db.session),
-      initial: () => ({ files: 0 }),
+      initial: () => ({ fileId: null, sessionId: null }),
     }),
   );
 
   bot.use(conversations());
 
+  bot.callbackQuery("leave", async (ctx) => {
+    await ctx.conversation.exit("chat");
+    await ctx.answerCallbackQuery("Left conversation");
+  });
+
+  // Getting telegram user id
+  bot.command("start", async (ctx) => {
+    const userId = ctx.from?.id;
+    console.log(userId);
+  });
+
+  bot.command("leave", async (ctx) => {
+    await ctx.conversation.exit();
+    await ctx.reply("Leaving.");
+  });
+
+  bot.command("stats", async (ctx) => {
+    // ctx.reply(`Already got ${ctx.session.files} docs!`);
+    console.log(ctx.session);
+  });
+
+  bot.command("match", async (ctx) => {});
+
   bot.use(createConversation(chat));
 
   bot.on([":document"], async (ctx) => {
-    const files = ctx.session.files;
+    const session = await db.session.findFirst({
+      where: {
+        key: ctx.from?.id!.toString(),
+      },
+    });
+
+    ctx.session.sessionId = session.id;
+
     const document = await ctx.getFile();
-    console.log("@", files);
 
-    if (files === 2) {
-      ctx.reply("Too much files");
-      return;
-    }
-
-    const fileId = document.file_id!;
+    const fileKey = document.file_id!;
     const fileSize = document.file_size!;
     const filePath = document.file_path!;
     const url = document.getUrl();
     const isPdf = checkIsPdf(filePath!);
-    const dlPath = createTmpPath(fileId);
+    const dlPath = createTmpPath(fileKey);
 
     // if (isPdf && fileSize < 4 * 1024 * 1024) {
     if (isPdf) {
@@ -100,27 +88,30 @@ async function bootstrap() {
         },
       });
       const file = {
-        id: fileId,
+        key: fileKey,
         name: filePath!,
         url: url,
       };
-      // const createdFile = await db.file.create({
-      //   data: {
-      //     key: file.id,
-      //     name: file.name,
-      //     url: file.url,
-      //     sessionId: session.id,
-      //   },
-      // });
-      //
+      const createdFile = await db.file.create({
+        data: {
+          key: file.key,
+          name: file.name,
+          url: file.url,
+          sessionId: session.id,
+        },
+      });
+
       const path = await document.download(dlPath);
 
       const pages = await parsePdf(path);
 
-      await storeDoc(pages);
+      ctx.session.fileId = createdFile.id;
 
-      console.log("Enter conversation");
+      await storeDoc(pages, createdFile.id);
 
+      console.log("Enterinig conversation");
+      console.log(ctx.session.fileId);
+      await ctx.reply("The chat is started");
       await ctx.conversation.enter("chat");
 
       // files + 1 < 10 && ctx.session.files++;
@@ -129,19 +120,6 @@ async function bootstrap() {
     }
   });
 
-  // Getting telegram user id
-  bot.command("start", async (ctx) => {
-    const userId = ctx.from?.id;
-    console.log(userId);
-  });
-
-  bot.command("stats", async (ctx) => {
-    ctx.reply(`Already got ${ctx.session.files} docs!`);
-  });
-
-  bot.command("match", async (ctx) => {
-    // await getMatches(embeddings, "1");
-  });
   bot.start();
 }
 

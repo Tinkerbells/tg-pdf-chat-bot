@@ -1,19 +1,32 @@
-import { env } from "../env";
-import { pinecone } from "../lib/pinecone";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { getEmbeddings } from "./getEmbeddings";
+import { Document, Prisma } from "@prisma/client";
+import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { db } from "../db";
 
-export const getMatches = async (message: string) => {
+export const getMatches = async (message: string, fileId: string) => {
   try {
     const embeddings = await getEmbeddings();
-    const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
-    const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
-      pineconeIndex,
-    });
+
+    const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
+      embeddings,
+      {
+        prisma: Prisma,
+        tableName: "Document",
+        vectorColumnName: "vector",
+        columns: {
+          content: PrismaVectorStore.ContentColumn,
+          id: PrismaVectorStore.IdColumn,
+        },
+        filter: {
+          namespace: {
+            equals: fileId,
+          },
+        },
+      },
+    );
     console.log("Geting matches...");
-    const results = await vectorStore.similaritySearch(message, 4);
-    console.log("Got matches");
+    const results = await vectorStore.similaritySearch(message, 3);
+    console.log("Got matches!");
     return results;
   } catch (error) {
     console.log("Error querying embeddings:", error);

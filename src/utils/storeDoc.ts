@@ -1,20 +1,56 @@
-import { env } from "../env";
 import { PDFPage } from "../types/pdf";
-import { pinecone } from "../lib/pinecone";
-import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { getEmbeddings } from "./getEmbeddings";
+import { Document, Prisma } from "@prisma/client";
+import { db } from "../db";
 
-export const storeDoc = async (pages: PDFPage[]) => {
+export const storeDoc = async (pages: PDFPage[], fileId: string) => {
   try {
-    const pineconeIndex = pinecone.Index(env.PINECONE_INDEX);
     const embeddings = await getEmbeddings();
     console.log("Storing vectors...");
-    await PineconeStore.fromDocuments(pages, embeddings, {
-      pineconeIndex,
-    });
-    console.log("Vectors are stored");
+
+    const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
+      embeddings,
+      {
+        prisma: Prisma,
+        tableName: "Document",
+        vectorColumnName: "vector",
+        columns: {
+          content: PrismaVectorStore.ContentColumn,
+          id: PrismaVectorStore.IdColumn,
+        },
+      },
+    );
+
+    const documents = await Promise.all(pages.map(prepareDocument));
+
+    await vectorStore.addModels(
+      await db.$transaction(
+        documents.map((content) =>
+          db.document.create({
+            data: { content: content[0].pageContent, namespace: fileId },
+          }),
+        ),
+      ),
+    );
+    console.log("Vectors are stored!");
   } catch (error) {
     console.log("Error while trying to store doc:", Error);
     throw error;
   }
+};
+
+export const truncateStringByBytes = (str: string, bytes: number) => {
+  const enc = new TextEncoder();
+  return new TextDecoder("utf-8").decode(enc.encode(str).slice(0, bytes));
+};
+
+const prepareDocument = async (page: PDFPage) => {
+  let { pageContent } = page;
+  pageContent = pageContent.replace(/\n/g, "");
+  // split the docs
+  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
+  const docs = await splitter.createDocuments([pageContent]);
+  return docs;
 };
