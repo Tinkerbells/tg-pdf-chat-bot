@@ -16,12 +16,12 @@ import { chat } from "./conversations";
 const allowUser = "641130142";
 
 interface SessionData {
-  fileId: string | null;
-  sessionId: string | null;
+  default: { fileId: string | null; sessionId: string | null };
+  conversation: { fileId: string | null; sessionId: string | null };
 }
 
 export type BotContext = FileFlavor<Context> &
-  SessionFlavor<ScenesSessionData & SessionData> &
+  SessionFlavor<SessionData> &
   ScenesFlavor &
   ConversationFlavor;
 
@@ -32,8 +32,17 @@ async function bootstrap() {
 
   bot.use(
     session({
-      storage: new PrismaAdapter<SessionData>(db.session),
-      initial: () => ({ fileId: null, sessionId: null }),
+      type: "multi",
+      default: {
+        storage: new PrismaAdapter<{
+          fileId: string | null;
+          sessionId: string | null;
+        }>(db.session),
+        initial: () => ({ fileId: null, sessionId: null }),
+      },
+      conversation: {
+        initial: () => ({ fileId: null, sessionId: null }),
+      },
     }),
   );
 
@@ -65,6 +74,7 @@ async function bootstrap() {
   bot.use(createConversation(chat));
 
   bot.on([":document"], async (ctx) => {
+    console.log(ctx.session.default.sessionId);
     const session = await db.session.findFirst({
       where: {
         key: ctx.from?.id!.toString(),
@@ -77,7 +87,6 @@ async function bootstrap() {
       );
       return;
     }
-    ctx.session.sessionId = session.id;
 
     const document = await ctx.getFile();
 
@@ -113,15 +122,15 @@ async function bootstrap() {
 
       const pages = await parsePdf(path);
 
-      ctx.session.fileId = createdFile.id;
+      ctx.session.default.fileId = createdFile.id;
+      ctx.session.default.sessionId = session.id;
 
       await storeDoc(pages, createdFile.id);
 
       console.log("Enterinig conversation");
-      console.log(ctx.session.fileId);
+      console.log(ctx.session.default.fileId);
       await ctx.reply("The chat is started");
-      await ctx.conversation.enter("chat");
-
+      ctx.conversation.enter("chat");
       // files + 1 < 10 && ctx.session.files++;
     } else {
       ctx.reply("File must be a pdf document, or size is more than 4mb");

@@ -1,14 +1,10 @@
 import { Conversation } from "@grammyjs/conversations";
-import { BotContext } from "..";
-import { getMatches } from "../utils";
+import { getCompletions, getMatches } from "../utils";
 import { createAssistantPrompt } from "../helpers";
-import { openai } from "../lib";
 import { db } from "../db";
-import { InlineKeyboard } from "grammy";
+import { BotContext } from "..";
 
 type ChatPdfConversation = Conversation<BotContext>;
-
-const replyKeyboard = new InlineKeyboard().text("Leave chat", "leave");
 
 export const chat = async (
   conversation: ChatPdfConversation,
@@ -19,7 +15,7 @@ export const chat = async (
     c++;
     ctx = await conversation.wait();
     if (ctx.message.text && ctx.message.text.charAt(0) !== "/") {
-      const { fileId, sessionId } = ctx.session;
+      const { fileId, sessionId } = conversation.session.default;
       const message = await conversation.external(() =>
         db.message.create({
           data: {
@@ -60,55 +56,22 @@ export const chat = async (
           .join("\n"),
       );
 
-      let fullRespone = "";
-      let messageText = "";
+      const msg = await ctx.reply("Generating answer...");
 
-      await conversation.external(() =>
-        console.log("@@@@@@@@@@@@@@ Getting AI answer..."),
+      const result = await conversation.external(() =>
+        getCompletions(assistantPrompt, message.text),
       );
 
-      const stream = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        temperature: 0,
-        messages: [
-          { role: "assistant", content: assistantPrompt },
-          { role: "user", content: message.text },
-        ],
-        stream: true,
-      });
+      await ctx.api.editMessageText(
+        msg.chat.id,
+        msg.message_id,
+        "Assistant answer:\n" + result,
+      );
 
-      const msg = await ctx.reply("Assistant answer:\n");
-      let counter = 0;
-      for await (const chunk of stream) {
-        const text = chunk.choices[0].delta.content ?? "";
-        fullRespone += text;
-        counter++;
-        if (counter % 20 === 0) {
-          messageText = fullRespone;
-          await ctx.api.editMessageText(
-            msg.chat.id.toString(),
-            msg.message_id,
-            "Assistant answer:\n" + messageText,
-            {
-              reply_markup: replyKeyboard,
-            },
-          );
-        }
-      }
-      if (messageText !== fullRespone) {
-        await ctx.api.editMessageText(
-          msg.chat.id.toString(),
-          msg.message_id,
-          "Assistant answer:\n" + fullRespone,
-          {
-            reply_markup: replyKeyboard,
-          },
-        );
-      }
       await conversation.external(() =>
         db.message.create({
           data: {
-            text: fullRespone,
+            text: result,
             isUserMessage: false,
             fileId,
             sessionId: sessionId,
