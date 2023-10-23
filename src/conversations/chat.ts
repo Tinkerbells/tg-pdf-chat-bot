@@ -57,34 +57,60 @@ export const chat = async (
           })
           .join("\n"),
       );
-      const text = await conversation.external(async () => {
-        console.log("Getting AI answer...");
-        try {
-          const res = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            temperature: 0,
-            messages: [
-              { role: "assistant", content: assistantPrompt },
-              { role: "user", content: message.text },
-            ],
-          });
-          return res.choices[0].message.content;
-        } catch (error) {
-          console.log("Error while getting openai completions", error);
-          ctx.reply("Something went wrong!");
+
+      let fullRespone = "";
+      let messageText = "";
+
+      console.log("Getting AI answer...");
+
+      const stream = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        temperature: 0,
+        messages: [
+          { role: "assistant", content: assistantPrompt },
+          { role: "user", content: message.text },
+        ],
+        stream: true,
+      });
+
+      const msg = await ctx.reply("Assistant answer:\n");
+      let counter = 0;
+      for await (const chunk of stream) {
+        const text = chunk.choices[0].delta.content ?? "";
+        fullRespone += text;
+        counter++;
+        if (counter % 20 === 0) {
+          messageText = fullRespone;
+          await ctx.api.editMessageText(
+            msg.chat.id.toString(),
+            msg.message_id,
+            "Assistant answer:\n" + messageText,
+            {
+              reply_markup: replyKeyboard,
+            },
+          );
         }
-      });
-      ctx.reply("Assistant response:\n" + text, {
-        reply_markup: replyKeyboard,
-      });
-      await db.message.create({
-        data: {
-          text: text,
-          isUserMessage: false,
-          fileId,
-          sessionId: sessionId,
-        },
-      });
+      }
+      if (messageText !== fullRespone) {
+        await ctx.api.editMessageText(
+          msg.chat.id.toString(),
+          msg.message_id,
+          "Assistant answer:\n" + fullRespone,
+          {
+            reply_markup: replyKeyboard,
+          },
+        );
+      }
+      await conversation.external(() =>
+        db.message.create({
+          data: {
+            text: fullRespone,
+            isUserMessage: false,
+            fileId,
+            sessionId: sessionId,
+          },
+        }),
+      );
     } else {
       ctx.reply(
         "Prompt should not start with /\nIf you want to leave chat type /leave",

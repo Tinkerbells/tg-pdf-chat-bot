@@ -12,7 +12,8 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import { run } from "@grammyjs/runner";
+
+const allowUser = "641130142";
 
 interface SessionData {
   fileId: string | null;
@@ -69,7 +70,13 @@ async function bootstrap() {
         key: ctx.from?.id!.toString(),
       },
     });
-
+    // TODO remove this after testing
+    if (session.key !== allowUser) {
+      await ctx.reply(
+        "You are not allow use this bot, still in development sorry!",
+      );
+      return;
+    }
     ctx.session.sessionId = session.id;
 
     const document = await ctx.getFile();
