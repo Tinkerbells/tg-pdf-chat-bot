@@ -8,16 +8,18 @@ import { InlineKeyboard } from "grammy";
 
 type ChatPdfConversation = Conversation<BotContext>;
 
+const replyKeyboard = new InlineKeyboard().text("Leave chat", "leave");
+
 export const chat = async (
   conversation: ChatPdfConversation,
   ctx: BotContext,
 ) => {
+  let c = 0;
   while (true) {
+    c++;
     ctx = await conversation.wait();
     if (ctx.message.text && ctx.message.text.charAt(0) !== "/") {
-      const replyKeyboard = new InlineKeyboard().text("Leave chat", "leave");
-      const fileId = ctx.session.fileId;
-      const sessionId = ctx.session.sessionId;
+      const { fileId, sessionId } = ctx.session;
       const message = await conversation.external(() =>
         db.message.create({
           data: {
@@ -61,7 +63,9 @@ export const chat = async (
       let fullRespone = "";
       let messageText = "";
 
-      console.log("Getting AI answer...");
+      await conversation.external(() =>
+        console.log("@@@@@@@@@@@@@@ Getting AI answer..."),
+      );
 
       const stream = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -111,6 +115,7 @@ export const chat = async (
           },
         }),
       );
+      await conversation.external(() => console.log("This is a ", c));
     } else {
       ctx.reply(
         "Prompt should not start with /\nIf you want to leave chat type /leave",
