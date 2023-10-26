@@ -58,14 +58,14 @@ async function bootstrap() {
   bot.use(conversations());
 
   // Getting telegram user id
-  bot.command("start", async (ctx) => {
-    const session = await db.session.findFirst({
-      where: {
-        key: ctx.from?.id!.toString(),
-      },
-    });
-    ctx.session.default.sessionId = session.id;
-  });
+  // bot.command("start", async (ctx) => {
+  //   const session = await db.session.findFirst({
+  //     where: {
+  //       key: ctx.from?.id!.toString(),
+  //     },
+  //   });
+  //   ctx.session.default.sessionId = session.id;
+  // });
 
   bot.callbackQuery("leave", async (ctx) => {
     console.log("Leaving...");

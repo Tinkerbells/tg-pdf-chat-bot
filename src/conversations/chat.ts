@@ -1,6 +1,11 @@
 import { Conversation } from "@grammyjs/conversations";
-import { getCompletions, getMatches } from "../utils";
-import { createAssistantPrompt } from "../helpers";
+import { getCompletions, getMatches, getTranscription } from "../utils";
+import {
+  convertMp3,
+  createAssistantPrompt,
+  createTmpPath,
+  unlinkFile,
+} from "../helpers";
 import { db } from "../db";
 import { BotContext } from "..";
 import { InlineKeyboard } from "grammy";
@@ -15,15 +20,30 @@ export const chat = async (
 ) => {
   while (true) {
     ctx = await conversation.wait();
-    if (!ctx.message) {
-      break;
-    }
-    if (ctx.message.text && ctx.message.text.charAt(0) !== "/") {
+
+    if (ctx.message) {
+      let userMessage = "";
+
+      // Converting telegram voice audio to text
+      if (ctx.message.voice) {
+        const audio = await ctx.getFile();
+        const path = await audio.download(
+          createTmpPath(audio.file_id) + ".oga",
+        );
+        const outputPath = path.replace(".oga", ".mp3");
+        await convertMp3(path, outputPath);
+        userMessage = await getTranscription(outputPath);
+        ctx.reply("Your question:\n" + userMessage);
+        await unlinkFile(path);
+      } else {
+        userMessage = ctx.message.text;
+      }
+
       const { fileId, sessionId } = conversation.session.default;
       const message = await conversation.external(() =>
         db.message.create({
           data: {
-            text: ctx.message.text,
+            text: userMessage,
             isUserMessage: true,
             fileId: fileId,
             sessionId: sessionId,
