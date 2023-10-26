@@ -8,6 +8,7 @@
   "dependencies": {
     "@grammyjs/conversations": "^1.1.2",
     "@grammyjs/files": "^1.0.4",
+    "@grammyjs/menu": "^1.2.1",
     "@grammyjs/runner": "^2.0.3",
     "@grammyjs/storage-prisma": "^2.4.0",
     "@pinecone-database/doc-splitter": "^0.0.1",

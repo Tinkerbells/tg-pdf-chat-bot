@@ -3,17 +3,21 @@ import { getCompletions, getMatches } from "../utils";
 import { createAssistantPrompt } from "../helpers";
 import { db } from "../db";
 import { BotContext } from "..";
+import { InlineKeyboard } from "grammy";
 
 type ChatPdfConversation = Conversation<BotContext>;
+
+const replyKeyboard = new InlineKeyboard().text("Leave chat", "leave");
 
 export const chat = async (
   conversation: ChatPdfConversation,
   ctx: BotContext,
 ) => {
-  let c = 0;
   while (true) {
-    c++;
     ctx = await conversation.wait();
+    if (!ctx.message) {
+      break;
+    }
     if (ctx.message.text && ctx.message.text.charAt(0) !== "/") {
       const { fileId, sessionId } = conversation.session.default;
       const message = await conversation.external(() =>
@@ -26,6 +30,7 @@ export const chat = async (
           },
         }),
       );
+
       const prevMessages = await conversation.external(() =>
         db.message.findMany({
           where: { fileId },
@@ -35,6 +40,7 @@ export const chat = async (
           take: 6,
         }),
       );
+
       const formattedPrevMessages = prevMessages.map((msg) => ({
         role: msg.isUserMessage ? ("user" as const) : ("assistant" as const),
         content: msg.text,
@@ -66,6 +72,7 @@ export const chat = async (
         msg.chat.id,
         msg.message_id,
         "Assistant answer:\n" + result,
+        { reply_markup: replyKeyboard },
       );
 
       await conversation.external(() =>
@@ -78,7 +85,6 @@ export const chat = async (
           },
         }),
       );
-      await conversation.external(() => console.log("This is a ", c));
     } else {
       ctx.reply(
         "Prompt should not start with /\nIf you want to leave chat type /leave",

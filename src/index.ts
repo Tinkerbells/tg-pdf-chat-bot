@@ -1,28 +1,37 @@
 import { Bot, Context, session, SessionFlavor } from "grammy";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { FileFlavor, hydrateFiles } from "@grammyjs/files";
-import { ScenesSessionData, ScenesFlavor } from "grammy-scenes";
-import { checkIsPdf, createTmpPath } from "./helpers";
-import { env } from "./env";
-import { db } from "./db";
-import { parsePdf, storeDoc } from "./utils";
 import {
   ConversationFlavor,
   conversations,
   createConversation,
 } from "@grammyjs/conversations";
+import { checkIsPdf, createTmpPath } from "./helpers";
+import { env } from "./env";
+import { db } from "./db";
+import { INIT_SESSION } from "./consts";
+import { parsePdf, storeDoc } from "./utils";
 import { chat } from "./conversations";
+import { filesMenu } from "./menus";
 
 const allowUser = "641130142";
 
+type FileType = {
+  name: string;
+  fileId: string;
+};
+type SessionType = {
+  fileId: string | null;
+  sessionId: string | null;
+  files: FileType[] | null;
+};
 interface SessionData {
-  default: { fileId: string | null; sessionId: string | null };
-  conversation: { fileId: string | null; sessionId: string | null };
+  default: SessionType;
+  conversation: SessionType;
 }
 
 export type BotContext = FileFlavor<Context> &
   SessionFlavor<SessionData> &
-  ScenesFlavor &
   ConversationFlavor;
 
 async function bootstrap() {
@@ -38,43 +47,60 @@ async function bootstrap() {
           fileId: string | null;
           sessionId: string | null;
         }>(db.session),
-        initial: () => ({ fileId: null, sessionId: null }),
+        initial: () => INIT_SESSION,
       },
       conversation: {
-        initial: () => ({ fileId: null, sessionId: null }),
+        initial: () => INIT_SESSION,
       },
     }),
   );
 
   bot.use(conversations());
 
-  bot.callbackQuery("leave", async (ctx) => {
-    await ctx.conversation.exit("chat");
-    await ctx.answerCallbackQuery("Left conversation");
-  });
-
   // Getting telegram user id
   bot.command("start", async (ctx) => {
-    const userId = ctx.from?.id;
-    console.log(userId);
+    const session = await db.session.findFirst({
+      where: {
+        key: ctx.from?.id!.toString(),
+      },
+    });
+    ctx.session.default.sessionId = session.id;
   });
+
+  bot.callbackQuery("leave", async (ctx) => {
+    console.log("Leaving...");
+    await ctx.conversation.exit("chat");
+    await ctx.reply("Chat session is closed");
+    await ctx.answerCallbackQuery("Left chat");
+  });
+
+  bot.use(createConversation(chat));
+
+  bot.use(filesMenu);
 
   bot.command("leave", async (ctx) => {
     await ctx.conversation.exit();
     await ctx.reply("Leaving.");
   });
 
-  bot.command("stats", async (ctx) => {
-    // ctx.reply(`Already got ${ctx.session.files} docs!`);
-    console.log(ctx.session);
+  bot.command("files", async (ctx) => {
+    const files = await db.file.findMany({
+      where: {
+        sessionId: ctx.session.default.sessionId,
+      },
+    });
+
+    ctx.session.default.files = files.map((file) => {
+      return {
+        name: file.name,
+        fileId: file.id,
+      };
+    });
+
+    ctx.reply("Your docuents:", { reply_markup: filesMenu });
   });
 
-  bot.command("match", async (ctx) => {});
-
-  bot.use(createConversation(chat));
-
   bot.on([":document"], async (ctx) => {
-    console.log(ctx.session.default.sessionId);
     const session = await db.session.findFirst({
       where: {
         key: ctx.from?.id!.toString(),
@@ -87,9 +113,8 @@ async function bootstrap() {
       );
       return;
     }
-
     const document = await ctx.getFile();
-
+    const fileName = ctx.message.document.file_name!;
     const fileKey = document.file_id!;
     const fileSize = document.file_size!;
     const filePath = document.file_path!;
@@ -106,7 +131,7 @@ async function bootstrap() {
       });
       const file = {
         key: fileKey,
-        name: filePath!,
+        name: fileName,
         url: url,
       };
       const createdFile = await db.file.create({
@@ -127,11 +152,10 @@ async function bootstrap() {
 
       await storeDoc(pages, createdFile.id);
 
-      console.log("Enterinig conversation");
+      console.log("Enterinig conversation with file", file.name);
       console.log(ctx.session.default.fileId);
-      await ctx.reply("The chat is started");
-      ctx.conversation.enter("chat");
-      // files + 1 < 10 && ctx.session.files++;
+      ctx.reply("chat with file - " + file.name + "is ready");
+      await ctx.conversation.enter("chat");
     } else {
       ctx.reply("File must be a pdf document, or size is more than 4mb");
     }
