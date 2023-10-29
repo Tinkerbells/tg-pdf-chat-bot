@@ -10,9 +10,11 @@ import { checkIsPdf, createTmpPath } from "./helpers";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
-import { parsePdf, storeDoc, summarizeDoc } from "./utils";
+import { parsePdf } from "./utils";
 import { chat } from "./conversations";
-import { filesMenu } from "./menus";
+import { filesMenu, interactMenu } from "./menus";
+import { Menu } from "@grammyjs/menu";
+import { PDFPage } from "./types/pdf";
 
 const allowUser = "641130142";
 
@@ -30,6 +32,7 @@ type SessionType = {
 
 interface SessionData {
   default: SessionType;
+  pages: PDFPage[] | null;
   conversation: SessionType;
 }
 
@@ -51,6 +54,9 @@ async function bootstrap() {
           sessionId: string | null;
         }>(db.session),
         initial: () => INIT_SESSION,
+      },
+      pages: {
+        initial: () => null,
       },
       conversation: {
         initial: () => INIT_SESSION,
@@ -87,6 +93,8 @@ async function bootstrap() {
   bot.use(createConversation(chat));
 
   bot.use(filesMenu);
+
+  bot.use(interactMenu);
 
   bot.command("files", async (ctx) => {
     const files = await db.file.findMany({
@@ -162,15 +170,15 @@ async function bootstrap() {
 
         const pages = await parsePdf(path);
 
+        ctx.session.pages = pages;
+
         ctx.session.default.fileId = createdFile.id;
+
         ctx.session.default.sessionId = session.id;
 
-        await storeDoc(pages, createdFile.id);
-
-        console.log("Enterinig conversation with file", file.name);
-        console.log(ctx.session.default.fileId);
-        ctx.reply("Chat with file - " + file.name + " " + "is ready");
-        await ctx.conversation.enter("chat");
+        ctx.reply("Choose what you want to do:", {
+          reply_markup: interactMenu,
+        });
       }
     } else {
       ctx.reply("File must be a pdf document");
