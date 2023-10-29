@@ -6,34 +6,16 @@ import {
   conversations,
   createConversation,
 } from "@grammyjs/conversations";
-import { checkIsPdf, createTmpPath } from "./helpers";
+import { chat } from "./conversations";
+import { filesMenu, interactMenu, startMenu } from "./menus";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
+import { checkIsPdf, createTmpPath } from "./helpers";
 import { parsePdf } from "./utils";
-import { chat } from "./conversations";
-import { filesMenu, interactMenu, startMenu } from "./menus";
-import { PDFPage } from "./types/pdf";
+import { type SessionData } from "./types/session";
 
 const allowUser = "641130142";
-
-type FileType = {
-  name: string;
-  fileId: string;
-};
-
-type SessionType = {
-  fileId: string | null;
-  sessionId: string | null;
-  files: FileType[] | null;
-  language: string;
-};
-
-interface SessionData {
-  default: SessionType;
-  pages: PDFPage[] | null;
-  conversation: SessionType;
-}
 
 export type BotContext = FileFlavor<Context> &
   SessionFlavor<SessionData> &
@@ -126,6 +108,7 @@ async function bootstrap() {
         key: ctx.from?.id!.toString(),
       },
     });
+
     // TODO remove this after testing
     if (session.key !== allowUser) {
       await ctx.reply(
@@ -136,13 +119,11 @@ async function bootstrap() {
     const document = await ctx.getFile();
     const fileName = ctx.message.document.file_name!;
     const fileKey = document.file_id!;
-    const fileSize = document.file_size!;
     const filePath = document.file_path!;
     const url = document.getUrl();
     const isPdf = checkIsPdf(filePath!);
     const dlPath = createTmpPath(fileKey);
 
-    // if (isPdf && fileSize < 4 * 1024 * 1024) {
     if (isPdf) {
       const session = await db.session.findFirst({
         where: {
@@ -155,7 +136,6 @@ async function bootstrap() {
         url: url,
       };
 
-      // check if file exsist
       const uniqueFile = await db.file.findFirst({
         where: {
           name: file.name,
