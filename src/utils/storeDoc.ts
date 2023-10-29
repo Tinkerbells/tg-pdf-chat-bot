@@ -53,7 +53,7 @@ const prepareDocument = async (page: PDFPage) => {
   let { pageContent } = page;
   pageContent = pageContent.replace(/\n/g, "");
   // split the docs
-  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
+  const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 256 });
   const docs = await splitter.createDocuments([pageContent]);
   return docs;
 };

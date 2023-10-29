@@ -25,7 +25,7 @@ export const getMatches = async (message: string, fileId: string) => {
       },
     );
     console.log("Geting matches...");
-    const results = await vectorStore.similaritySearch(message, 3);
+    const results = await vectorStore.similaritySearch(message, 4);
     console.log("Got matches!");
     return results;
   } catch (error) {

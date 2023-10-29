@@ -24,9 +24,13 @@ export const chat = async (
     if (ctx.message) {
       let userMessage = "";
 
-      // Converting telegram voice audio to text
+      // Converting telegram voice message to text
       if (ctx.message.voice) {
         const audio = await ctx.getFile();
+        if (audio.file_size > 24 * 1024 * 1024) {
+          ctx.reply("Voice message to large!");
+          break;
+        }
         const path = await audio.download(
           createTmpPath(audio.file_id) + ".oga",
         );
@@ -70,7 +74,10 @@ export const chat = async (
         getMatches(message.text, fileId),
       );
 
-      const context = results.map((r) => r.pageContent).join("\n\n");
+      const context = results
+        .map((r) => r.pageContent)
+        .join("\n\n")
+        .slice(0, 3500); // slice before achieving max tokens
 
       const assistantPrompt = createAssistantPrompt(
         context,
@@ -104,10 +111,6 @@ export const chat = async (
             sessionId: sessionId,
           },
         }),
-      );
-    } else {
-      ctx.reply(
-        "Prompt should not start with /\nIf you want to leave chat type /leave",
       );
     }
   }

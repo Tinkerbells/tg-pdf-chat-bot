@@ -10,7 +10,7 @@ import { checkIsPdf, createTmpPath } from "./helpers";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
-import { parsePdf, storeDoc } from "./utils";
+import { parsePdf, storeDoc, summarizeDoc } from "./utils";
 import { chat } from "./conversations";
 import { filesMenu } from "./menus";
 
@@ -20,11 +20,14 @@ type FileType = {
   name: string;
   fileId: string;
 };
+
 type SessionType = {
   fileId: string | null;
   sessionId: string | null;
   files: FileType[] | null;
+  language: string;
 };
+
 interface SessionData {
   default: SessionType;
   conversation: SessionType;
@@ -58,14 +61,21 @@ async function bootstrap() {
   bot.use(conversations());
 
   // Getting telegram user id
-  // bot.command("start", async (ctx) => {
-  //   const session = await db.session.findFirst({
-  //     where: {
-  //       key: ctx.from?.id!.toString(),
-  //     },
-  //   });
-  //   ctx.session.default.sessionId = session.id;
-  // });
+  bot.command("start", async (ctx) => {
+    const session = await db.session.findFirst({
+      where: {
+        key: ctx.from?.id!.toString(),
+      },
+    });
+    ctx.session.default.sessionId
+      ? (ctx.session.default.sessionId = session.id)
+      : null;
+  });
+
+  bot.command("leave", async (ctx) => {
+    await ctx.conversation.exit();
+    await ctx.reply("Leaving.");
+  });
 
   bot.callbackQuery("leave", async (ctx) => {
     console.log("Leaving...");
@@ -77,11 +87,6 @@ async function bootstrap() {
   bot.use(createConversation(chat));
 
   bot.use(filesMenu);
-
-  bot.command("leave", async (ctx) => {
-    await ctx.conversation.exit();
-    await ctx.reply("Leaving.");
-  });
 
   bot.command("files", async (ctx) => {
     const files = await db.file.findMany({
@@ -97,7 +102,7 @@ async function bootstrap() {
       };
     });
 
-    ctx.reply("Your docuents:", { reply_markup: filesMenu });
+    ctx.reply("Your documents:", { reply_markup: filesMenu });
   });
 
   bot.on([":document"], async (ctx) => {
@@ -109,7 +114,7 @@ async function bootstrap() {
     // TODO remove this after testing
     if (session.key !== allowUser) {
       await ctx.reply(
-        "You are not allow use this bot, still in development sorry!",
+        "You are not allow to use this bot, still in development sorry!",
       );
       return;
     }
@@ -134,30 +139,41 @@ async function bootstrap() {
         name: fileName,
         url: url,
       };
-      const createdFile = await db.file.create({
-        data: {
-          key: file.key,
-          name: file.name,
-          url: file.url,
-          sessionId: session.id,
-        },
-      });
 
-      const path = await document.download(dlPath);
+      // const uniqueFile = await db.file.findFirst({
+      //   where: {
+      //     name: file.name,
+      //   },
+      // });
+      const uniqueFile = false;
+      if (uniqueFile) {
+        console.log("File already exsist");
+        ctx.reply("File already exsist!");
+      } else {
+        const createdFile = await db.file.create({
+          data: {
+            key: file.key,
+            name: file.name,
+            url: file.url,
+            sessionId: session.id,
+          },
+        });
+        const path = await document.download(dlPath);
 
-      const pages = await parsePdf(path);
+        const pages = await parsePdf(path);
 
-      ctx.session.default.fileId = createdFile.id;
-      ctx.session.default.sessionId = session.id;
+        ctx.session.default.fileId = createdFile.id;
+        ctx.session.default.sessionId = session.id;
 
-      await storeDoc(pages, createdFile.id);
+        await storeDoc(pages, createdFile.id);
 
-      console.log("Enterinig conversation with file", file.name);
-      console.log(ctx.session.default.fileId);
-      ctx.reply("chat with file - " + file.name + "is ready");
-      await ctx.conversation.enter("chat");
+        console.log("Enterinig conversation with file", file.name);
+        console.log(ctx.session.default.fileId);
+        ctx.reply("Chat with file - " + file.name + " " + "is ready");
+        await ctx.conversation.enter("chat");
+      }
     } else {
-      ctx.reply("File must be a pdf document, or size is more than 4mb");
+      ctx.reply("File must be a pdf document");
     }
   });
 
