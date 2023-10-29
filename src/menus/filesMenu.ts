@@ -1,7 +1,7 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { db } from "../db";
-import { getTranslation, summarizeDoc } from "../utils";
+import { summarizeDoc } from "../utils";
 
 const fileMenu = new Menu<BotContext>("file")
   .text("Chat", async (ctx) => {
@@ -13,6 +13,12 @@ const fileMenu = new Menu<BotContext>("file")
 
     await ctx.conversation.enter("chat");
   })
+  .text("Summarize", async (ctx) => {
+    const msg = await ctx.reply("Generation summarization...");
+    const text = await summarizeDoc(ctx.session.default.fileId);
+    ctx.api.editMessageText(msg.chat.id, msg.message_id, "Answer:\n" + text);
+  })
+  .row()
   .text("Delete", async (ctx) => {
     const id = ctx.session.default.fileId;
     try {
@@ -32,19 +38,6 @@ const fileMenu = new Menu<BotContext>("file")
     }
   })
   .row()
-  .text("Summarize", async (ctx) => {
-    const msg = ctx.reply("Generation summarization...");
-    const text = await summarizeDoc(ctx.session.default.fileId);
-    if (ctx.session.default.language === "US") {
-      ctx.reply(text);
-    } else {
-      const translation = await getTranslation(
-        text,
-        ctx.session.default.language,
-      );
-      ctx.reply(translation);
-    }
-  })
   .back("Go Back");
 
 export const filesMenu = new Menu<BotContext>("files");

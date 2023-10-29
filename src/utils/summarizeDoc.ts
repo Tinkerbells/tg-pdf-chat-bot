@@ -2,9 +2,11 @@ import { OpenAI } from "langchain/llms/openai";
 import { loadSummarizationChain } from "langchain/chains";
 import { env } from "../env";
 import { db } from "../db";
-import { downloadDoc, unlinkFile } from "../helpers";
+import { downloadDoc } from "../helpers";
 import { parsePdf } from "./parsePdf";
 import { PDFPage } from "../types/pdf";
+import { getTranslation } from "./getTranslation";
+import { detectLanguage } from "./detectLanguage";
 
 export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
   if (!docs) {
@@ -25,14 +27,16 @@ export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
   try {
     const chain = loadSummarizationChain(model, {
       type: "map_reduce",
-      // combinePrompt: prompt,
     });
 
     const res = await chain.call({
       input_documents: docs,
     });
 
-    return res.text;
+    const textPart = docs[0].pageContent.slice(0, 200).replace(/\n/g, "");
+    const language = await detectLanguage(textPart);
+    const text = await getTranslation(res.text, language);
+    return text;
   } catch (error) {
     console.log("Error while summarizing docs", error);
   }

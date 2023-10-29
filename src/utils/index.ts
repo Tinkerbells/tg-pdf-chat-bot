@@ -4,5 +4,6 @@ export * from "./storeDoc";
 export * from "./getMatches";
 export * from "./getCompletions";
 export * from "./getTranscription";
-export * from "./getTranslation";
+export * from "./detectLanguage";
+export * from "./detectLanguage";
 export * from "./summarizeDoc";

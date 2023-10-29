@@ -12,8 +12,7 @@ import { db } from "./db";
 import { INIT_SESSION } from "./consts";
 import { parsePdf } from "./utils";
 import { chat } from "./conversations";
-import { filesMenu, interactMenu } from "./menus";
-import { Menu } from "@grammyjs/menu";
+import { filesMenu, interactMenu, startMenu } from "./menus";
 import { PDFPage } from "./types/pdf";
 
 const allowUser = "641130142";
@@ -66,16 +65,21 @@ async function bootstrap() {
 
   bot.use(conversations());
 
-  // Getting telegram user id
+  bot.use(startMenu);
+
   bot.command("start", async (ctx) => {
     const session = await db.session.findFirst({
       where: {
         key: ctx.from?.id!.toString(),
       },
     });
+
     ctx.session.default.sessionId
       ? (ctx.session.default.sessionId = session.id)
       : null;
+    ctx.reply("Welcome to chat with pdf bot\nPlease choose language:", {
+      reply_markup: startMenu,
+    });
   });
 
   bot.command("leave", async (ctx) => {
@@ -109,8 +113,11 @@ async function bootstrap() {
         fileId: file.id,
       };
     });
-
-    ctx.reply("Your documents:", { reply_markup: filesMenu });
+    if (!!files.length) {
+      ctx.reply("Your documents:", { reply_markup: filesMenu });
+    } else {
+      ctx.reply("You doesn't have any document yet");
+    }
   });
 
   bot.on([":document"], async (ctx) => {
@@ -148,12 +155,13 @@ async function bootstrap() {
         url: url,
       };
 
-      // const uniqueFile = await db.file.findFirst({
-      //   where: {
-      //     name: file.name,
-      //   },
-      // });
-      const uniqueFile = false;
+      // check if file exsist
+      const uniqueFile = await db.file.findFirst({
+        where: {
+          name: file.name,
+        },
+      });
+
       if (uniqueFile) {
         console.log("File already exsist");
         ctx.reply("File already exsist!");

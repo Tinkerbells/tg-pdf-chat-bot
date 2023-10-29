@@ -1,6 +1,6 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import { getTranslation, storeDoc, summarizeDoc } from "../utils";
+import { storeDoc, summarizeDoc } from "../utils";
 
 export const interactMenu = new Menu<BotContext>("interact");
 
@@ -19,23 +19,7 @@ interactMenu.dynamic((ctx, range) => {
     .text("Summarize", async (ctx) => {
       const msg = await ctx.reply("Summarizing...");
       const text = await summarizeDoc(fileId, pages);
-      if (ctx.session.default.language === "ENGLISH") {
-        ctx.api.editMessageText(
-          msg.chat.id,
-          msg.message_id,
-          "Answer:\n" + text,
-        );
-      } else {
-        const translation = await getTranslation(
-          text,
-          ctx.session.default.language,
-        );
-        ctx.api.editMessageText(
-          msg.chat.id,
-          msg.message_id,
-          "Answer:\n" + translation,
-        );
-      }
+      ctx.api.editMessageText(msg.chat.id, msg.message_id, "Answer:\n" + text);
       ctx.session.pages = [];
     })
     .row();

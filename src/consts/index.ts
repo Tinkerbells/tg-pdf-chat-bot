@@ -3,5 +3,5 @@ export const INIT_SESSION = {
   fileName: null,
   sessionId: null,
   files: null,
-  language: "RUSSIAN",
+  language: null,
 };
