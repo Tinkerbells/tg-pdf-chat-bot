@@ -1,4 +1,11 @@
-import { Bot, Context, session, SessionFlavor } from "grammy";
+import {
+  Bot,
+  Context,
+  GrammyError,
+  HttpError,
+  session,
+  SessionFlavor,
+} from "grammy";
 import { PrismaAdapter } from "@grammyjs/storage-prisma";
 import { FileFlavor, hydrateFiles } from "@grammyjs/files";
 import {
@@ -7,7 +14,7 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import { filesMenu, interactMenu, startMenu } from "./menus";
+import { filesMenu, interactMenu, languageMenu, settingsMenu } from "./menus";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
@@ -23,6 +30,19 @@ export type BotContext = FileFlavor<Context> &
 
 async function bootstrap() {
   const bot = new Bot<BotContext>(env.BOT_TOKEN);
+
+  bot.catch((err) => {
+    const ctx = err.ctx;
+    console.error(`Error while handling update ${ctx.update.update_id}:`);
+    const e = err.error;
+    if (e instanceof GrammyError) {
+      console.error("Error in request:", e.description);
+    } else if (e instanceof HttpError) {
+      console.error("Could not contact Telegram:", e);
+    } else {
+      console.error("Unknown error:", e);
+    }
+  });
 
   bot.api.config.use(hydrateFiles(bot.token));
 
@@ -47,7 +67,7 @@ async function bootstrap() {
 
   bot.use(conversations());
 
-  bot.use(startMenu);
+  bot.use(settingsMenu);
 
   bot.command("start", async (ctx) => {
     const session = await db.session.findFirst({
@@ -59,9 +79,28 @@ async function bootstrap() {
     ctx.session.default.sessionId
       ? (ctx.session.default.sessionId = session.id)
       : null;
-    ctx.reply("Welcome to chat with pdf bot\nPlease choose language:", {
-      reply_markup: startMenu,
+
+    ctx.session.default.language =
+      ctx.msg.from.language_code === "ru" ? "russian" : "english";
+
+    ctx.reply("Welcome to chat with pdf bot!");
+  });
+
+  bot.command("settings", async (ctx) => {
+    ctx.reply("Settings:", {
+      reply_markup: settingsMenu,
     });
+  });
+
+  bot.command("pay", async (ctx) => {});
+  bot.on("pre_checkout_query", (ctx) => {
+    ctx.answerPreCheckoutQuery(true);
+  });
+
+  // слушаем ивент, когда пользователь уже оплатил.
+  bot.on(":successful_payment", (ctx) => {
+    // payload, который я передал третьим параметром в replyWithInvoice
+    console.log(ctx.message.successful_payment.invoice_payload);
   });
 
   bot.command("leave", async (ctx) => {
@@ -95,8 +134,11 @@ async function bootstrap() {
         fileId: file.id,
       };
     });
+
     if (!!files.length) {
-      ctx.reply("Your documents:", { reply_markup: filesMenu });
+      ctx.reply(`You have ${files.length} pdf documents:`, {
+        reply_markup: filesMenu,
+      });
     } else {
       ctx.reply("You doesn't have any document yet");
     }
@@ -154,6 +196,7 @@ async function bootstrap() {
             sessionId: session.id,
           },
         });
+
         const path = await document.download(dlPath);
 
         const pages = await parsePdf(path);
@@ -172,8 +215,6 @@ async function bootstrap() {
       ctx.reply("File must be a pdf document");
     }
   });
-
   bot.start();
 }
-
 bootstrap();

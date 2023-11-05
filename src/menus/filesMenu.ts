@@ -5,12 +5,7 @@ import { summarizeDoc } from "../utils";
 
 const fileMenu = new Menu<BotContext>("file")
   .text("Chat", async (ctx) => {
-    const file = ctx.session.default.files.find(
-      (file) => file.fileId === ctx.session.default.fileId,
-    );
-
-    ctx.reply("Chat with file - " + file.name + " " + "is ready");
-
+    ctx.reply("Entering chat:");
     await ctx.conversation.enter("chat");
   })
   .text("Summarize", async (ctx) => {

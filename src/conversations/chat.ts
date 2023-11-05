@@ -21,7 +21,9 @@ export const chat = async (
   while (true) {
     ctx = await conversation.wait();
 
-    if (ctx.message) {
+    if (ctx.message!.text!.charAt(0) === "/") {
+      ctx.reply('Please ask question without "/" in the begging');
+    } else {
       let userMessage = "";
 
       // Converting telegram voice message to text

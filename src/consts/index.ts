@@ -4,4 +4,5 @@ export const INIT_SESSION = {
   sessionId: null,
   files: null,
   language: null,
+  isPro: false,
 };

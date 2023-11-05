@@ -7,7 +7,6 @@ export const interactMenu = new Menu<BotContext>("interact");
 interactMenu.dynamic((ctx, range) => {
   const pages = ctx.session.pages;
   const fileId = ctx.session.default.fileId;
-
   range
     .text("Chat", async (ctx) => {
       await storeDoc(pages, fileId);
