@@ -14,13 +14,15 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import { filesMenu, interactMenu, languageMenu, settingsMenu } from "./menus";
+import { filesMenu, interactMenu, settingsMenu } from "./menus";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
-import { checkIsPdf, createTmpPath } from "./helpers";
+import { checkIsPdf, createTmpPath, getDuration, getPriceId } from "./helpers";
 import { parsePdf } from "./utils";
 import { type SessionData } from "./types/session";
+import { PayloadType } from "./types/payload";
+import { getSession } from "./middleware";
 
 const allowUser = "641130142";
 
@@ -65,6 +67,8 @@ async function bootstrap() {
     }),
   );
 
+  bot.use(getSession);
+
   bot.use(conversations());
 
   bot.use(settingsMenu);
@@ -92,15 +96,36 @@ async function bootstrap() {
     });
   });
 
-  bot.command("pay", async (ctx) => {});
   bot.on("pre_checkout_query", (ctx) => {
     ctx.answerPreCheckoutQuery(true);
   });
 
-  // слушаем ивент, когда пользователь уже оплатил.
-  bot.on(":successful_payment", (ctx) => {
-    // payload, который я передал третьим параметром в replyWithInvoice
+  bot.on(":successful_payment", async (ctx) => {
+    const { id: sessionId } = await db.session.findFirst({
+      where: {
+        key: ctx.from.id.toString(),
+      },
+    });
     console.log(ctx.message.successful_payment.invoice_payload);
+    const payload = JSON.parse(
+      ctx.message.successful_payment.invoice_payload,
+    ) as PayloadType;
+    const currentDate = new Date();
+    const endedAt = new Date(currentDate);
+    const durationInMonths = getDuration(payload.period);
+    const priceID = getPriceId(payload.period);
+    endedAt.setMonth(endedAt.getMonth() + durationInMonths);
+    try {
+      const subscription = await db.subscription.create({
+        data: {
+          sessionId: sessionId,
+          priceId: priceID,
+          endedAt: endedAt,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
   });
 
   bot.command("leave", async (ctx) => {
@@ -215,6 +240,7 @@ async function bootstrap() {
       ctx.reply("File must be a pdf document");
     }
   });
+
   bot.start();
 }
 bootstrap();

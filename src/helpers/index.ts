@@ -4,4 +4,6 @@ export * from "./createAssistantPrompt";
 export * from "./unlinkFile";
 export * from "./convertMp3";
 export * from "./downloadDoc";
-export * from "./getInvoice";
+export * from "./handleInvoice";
+export * from "./getSubscriptionInfo";
+export * from "./getDateDifference";
