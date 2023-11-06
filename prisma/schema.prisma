@@ -33,7 +33,6 @@ model File {
   name String
 
   url      String
-  key      String
   messages Message[]
 
   documentId String?
