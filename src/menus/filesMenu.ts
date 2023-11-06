@@ -30,6 +30,7 @@ const fileMenu = new Menu<BotContext>("file")
       return;
     } catch (error) {
       console.log("Error while deleting file", error);
+      throw error;
     }
   })
   .row()

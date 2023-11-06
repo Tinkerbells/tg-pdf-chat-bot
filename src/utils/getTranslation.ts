@@ -12,5 +12,6 @@ export const getTranslation = async (text: string, language: string) => {
     return response.choices[0].message.content;
   } catch (error) {
     console.log("Error while getting completions:", error);
+    throw error;
   }
 };

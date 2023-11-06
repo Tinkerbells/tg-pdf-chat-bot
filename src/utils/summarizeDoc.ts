@@ -39,5 +39,6 @@ export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
     return text;
   } catch (error) {
     console.log("Error while summarizing docs", error);
+    throw error;
   }
 };

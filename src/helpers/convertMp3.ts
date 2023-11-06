@@ -12,5 +12,6 @@ export const convertMp3 = (path: string, outputPath: string) => {
     });
   } catch (e) {
     console.log("Error while creating mp3", e.message);
+    throw e;
   }
 };

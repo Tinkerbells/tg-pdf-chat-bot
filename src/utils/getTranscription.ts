@@ -8,7 +8,8 @@ export const getTranscription = async (path: string) => {
       file: fs.createReadStream(path),
     });
     return response.text;
-  } catch (e) {
-    console.log("Error while transcription", e.message);
+  } catch (error) {
+    console.log("Error while transcription", error.message);
+    throw error;
   }
 };

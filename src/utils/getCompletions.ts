@@ -17,5 +17,6 @@ export const getCompletions = async (
     return response.choices[0].message.content;
   } catch (error) {
     console.log("Error while getting completions:", error);
+    throw error;
   }
 };
