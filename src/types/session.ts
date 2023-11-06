@@ -16,5 +16,4 @@ export type SessionType = {
   sessionId: string | null;
   files: FileType[] | null;
   language: string;
-  isPro: boolean;
 };

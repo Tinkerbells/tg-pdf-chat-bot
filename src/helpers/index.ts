@@ -6,4 +6,5 @@ export * from "./convertMp3";
 export * from "./downloadDoc";
 export * from "./handleInvoice";
 export * from "./getSubscriptionInfo";
+export * from "./getEndDate";
 export * from "./getDateDifference";

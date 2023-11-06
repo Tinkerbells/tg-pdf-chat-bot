@@ -18,7 +18,7 @@ import { filesMenu, interactMenu, settingsMenu } from "./menus";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
-import { checkIsPdf, createTmpPath, getDuration, getPriceId } from "./helpers";
+import { checkIsPdf, createTmpPath, getEndDate, getPriceId } from "./helpers";
 import { parsePdf } from "./utils";
 import { type SessionData } from "./types/session";
 import { PayloadType } from "./types/payload";
@@ -101,31 +101,18 @@ async function bootstrap() {
   });
 
   bot.on(":successful_payment", async (ctx) => {
-    const { id: sessionId } = await db.session.findFirst({
-      where: {
-        key: ctx.from.id.toString(),
-      },
-    });
-    console.log(ctx.message.successful_payment.invoice_payload);
     const payload = JSON.parse(
       ctx.message.successful_payment.invoice_payload,
     ) as PayloadType;
-    const currentDate = new Date();
-    const endedAt = new Date(currentDate);
-    const durationInMonths = getDuration(payload.period);
     const priceID = getPriceId(payload.period);
-    endedAt.setMonth(endedAt.getMonth() + durationInMonths);
-    try {
-      const subscription = await db.subscription.create({
-        data: {
-          sessionId: sessionId,
-          priceId: priceID,
-          endedAt: endedAt,
-        },
-      });
-    } catch (error) {
-      console.log(error);
-    }
+    const endedAt = getEndDate(payload.period);
+    await db.subscription.create({
+      data: {
+        sessionId: ctx.session.default.sessionId,
+        priceId: priceID,
+        endedAt: endedAt,
+      },
+    });
   });
 
   bot.command("leave", async (ctx) => {
@@ -192,11 +179,6 @@ async function bootstrap() {
     const dlPath = createTmpPath(fileKey);
 
     if (isPdf) {
-      const session = await db.session.findFirst({
-        where: {
-          key: ctx.from?.id!.toString(),
-        },
-      });
       const file = {
         key: fileKey,
         name: fileName,
