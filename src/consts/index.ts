@@ -1,8 +1,6 @@
 export const INIT_SESSION = {
-  fileId: null,
-  fileName: null,
   sessionId: null,
+  file: null,
   files: null,
   language: null,
-  isPro: false,
 };

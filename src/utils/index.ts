@@ -7,3 +7,6 @@ export * from "./getTranscription";
 export * from "./detectLanguage";
 export * from "./detectLanguage";
 export * from "./summarizeDoc";
+export * from "./getSubscription";
+export * from "./validateSubscription";
+export * from "./saveFile";

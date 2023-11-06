@@ -28,15 +28,19 @@ export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
     const chain = loadSummarizationChain(model, {
       type: "map_reduce",
     });
-
-    const res = await chain.call({
-      input_documents: docs,
-    });
-
-    const textPart = docs[0].pageContent.slice(0, 200).replace(/\n/g, "");
-    const language = await detectLanguage(textPart);
-    const text = await getTranslation(res.text, language);
-    return text;
+    console.log("Summarizing...");
+    try {
+      const res = await chain.call({
+        input_documents: docs,
+      });
+      const textPart = docs[0].pageContent.slice(0, 200).replace(/\n/g, "");
+      const language = await detectLanguage(textPart);
+      const text = await getTranslation(res.text, language);
+      return text;
+    } catch (error) {
+      console.log("Error while summarizing:", error);
+      throw error;
+    }
   } catch (error) {
     console.log("Error while summarizing docs", error);
     throw error;

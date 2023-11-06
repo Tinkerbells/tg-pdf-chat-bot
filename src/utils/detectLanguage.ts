@@ -2,7 +2,7 @@ import { openai } from "../lib";
 
 export const detectLanguage = async (detectingPart: string) => {
   console.log("Detecting language...");
-  const prompt = `Detect language of this text ${detectingPart} and write it in one word in english`;
+  const prompt = `Detect language of this text ${detectingPart} and return it's language code`;
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",

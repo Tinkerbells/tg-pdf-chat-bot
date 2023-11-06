@@ -1,40 +1,60 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { db } from "../db";
-import { summarizeDoc } from "../utils";
+import { getSubscription, summarizeDoc } from "../utils";
 
-const fileMenu = new Menu<BotContext>("file")
-  .text("Chat", async (ctx) => {
-    ctx.reply("Entering chat:");
+const fileMenu = new Menu<BotContext>("file");
+
+fileMenu.dynamic(async (ctx, range) => {
+  const isSubscribed = await getSubscription(ctx.session.default.sessionId);
+  range.text("Chat", async (ctx) => {
+    const id = ctx.session.default.file.fileId;
+    const files = ctx.session.default.files;
+    const { name } = files.find((f) => f.fileId === id);
+    ctx.reply(`Entering chat with ${name}:`);
     await ctx.conversation.enter("chat");
-  })
-  .text("Summarize", async (ctx) => {
-    const msg = await ctx.reply("Generation summarization...");
-    const text = await summarizeDoc(ctx.session.default.fileId);
-    ctx.api.editMessageText(msg.chat.id, msg.message_id, "Answer:\n" + text);
-  })
-  .row()
-  .text("Delete", async (ctx) => {
-    const id = ctx.session.default.fileId;
-    try {
-      await db.$transaction([
-        db.message.deleteMany({ where: { fileId: id } }),
-        db.document.deleteMany({ where: { fileId: id } }),
-        db.file.delete({ where: { id: ctx.session.default.fileId } }),
-      ]);
-      console.log("File deleted succsesfully");
-      ctx.reply("File deleted succsesfully");
-      if (ctx.session.default.files.length-- !== 0) {
-        ctx.menu.back();
+  });
+
+  !isSubscribed && range.row();
+
+  if (isSubscribed) {
+    range
+      .text("Summarize", async (ctx) => {
+        const msg = await ctx.reply("Generation summarization...");
+        const text = await summarizeDoc(ctx.session.default.file.fileId);
+        ctx.api.editMessageText(
+          msg.chat.id,
+          msg.message_id,
+          "Answer:\n" + text,
+        );
+      })
+      .row();
+  }
+  range
+    .text("Delete", async (ctx) => {
+      const id = ctx.session.default.file.fileId;
+      const files = ctx.session.default.files;
+      const { name } = files.find((f) => f.fileId === id);
+      try {
+        await db.$transaction([
+          db.message.deleteMany({ where: { fileId: id } }),
+          db.document.deleteMany({ where: { fileId: id } }),
+          db.file.delete({ where: { id: id } }),
+        ]);
+        ctx.session.default.files = files.filter((f) => f.fileId !== id);
+        console.log(`File ${name} deleted succsesfully`);
+        ctx.reply(`File ${name} deleted succsesfully`);
+        if (ctx.session.default.files.length !== 0) {
+          ctx.menu.back();
+        }
+      } catch (error) {
+        console.log("Error while deleting file", error);
+        throw error;
       }
-      return;
-    } catch (error) {
-      console.log("Error while deleting file", error);
-      throw error;
-    }
-  })
-  .row()
-  .back("Go Back");
+    })
+    .row()
+    .back("Go Back");
+});
 
 export const filesMenu = new Menu<BotContext>("files");
 
@@ -43,7 +63,7 @@ filesMenu.dynamic((ctx, range) => {
   files.forEach((file) =>
     range
       .submenu(file.name, "file", async (ctx) => {
-        ctx.session.default.fileId = file.fileId;
+        ctx.session.default.file.fileId = file.fileId;
       })
       .row(),
   );

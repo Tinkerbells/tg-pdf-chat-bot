@@ -2,7 +2,8 @@ import { PDFPage } from "./pdf";
 
 export type FileType = {
   name: string;
-  fileId: string;
+  fileId?: string;
+  url?: string;
 };
 
 export interface SessionData {
@@ -12,8 +13,8 @@ export interface SessionData {
 }
 
 export type SessionType = {
-  fileId: string | null;
   sessionId: string | null;
+  file: FileType;
   files: FileType[] | null;
   language: string;
 };

@@ -45,7 +45,8 @@ export const chat = async (
         userMessage = ctx.message.text;
       }
 
-      const { fileId, sessionId } = conversation.session.default;
+      const sessionId = conversation.session.conversation.sessionId;
+      const fileId = conversation.session.conversation.file.fileId;
       const message = await conversation.external(() =>
         db.message.create({
           data: {

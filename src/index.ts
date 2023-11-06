@@ -19,7 +19,7 @@ import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
 import { checkIsPdf, createTmpPath, getEndDate, getPriceId } from "./helpers";
-import { parsePdf } from "./utils";
+import { getSubscription, parsePdf, validateSubscription } from "./utils";
 import { type SessionData } from "./types/session";
 import { PayloadType } from "./types/payload";
 import { getSession } from "./middleware";
@@ -39,10 +39,19 @@ async function bootstrap() {
     const e = err.error;
     if (e instanceof GrammyError) {
       console.error("Error in request:", e.description);
+      if (ctx.chat) {
+        ctx.reply("Oops, something goes wrong, please try again");
+      }
     } else if (e instanceof HttpError) {
       console.error("Could not contact Telegram:", e);
+      if (ctx.chat) {
+        ctx.reply("Oops, something goes wrong, please try again");
+      }
     } else {
       console.error("Unknown error:", e);
+      if (ctx.chat) {
+        ctx.reply("Oops, something goes wrong, please try again");
+      }
     }
   });
 
@@ -52,10 +61,7 @@ async function bootstrap() {
     session({
       type: "multi",
       default: {
-        storage: new PrismaAdapter<{
-          fileId: string | null;
-          sessionId: string | null;
-        }>(db.session),
+        storage: new PrismaAdapter<SessionData>(db.session),
         initial: () => INIT_SESSION,
       },
       pages: {
@@ -67,28 +73,15 @@ async function bootstrap() {
     }),
   );
 
-  bot.use(getSession);
-
   bot.use(conversations());
 
   bot.use(settingsMenu);
 
   bot.command("start", async (ctx) => {
-    const session = await db.session.findFirst({
-      where: {
-        key: ctx.from?.id!.toString(),
-      },
-    });
-
-    ctx.session.default.sessionId
-      ? (ctx.session.default.sessionId = session.id)
-      : null;
-
-    ctx.session.default.language =
-      ctx.msg.from.language_code === "ru" ? "russian" : "english";
-
     ctx.reply("Welcome to chat with pdf bot!");
   });
+
+  bot.use(getSession);
 
   bot.command("settings", async (ctx) => {
     ctx.reply("Settings:", {
@@ -170,6 +163,9 @@ async function bootstrap() {
       );
       return;
     }
+
+    const daysLeft = await getSubscription(ctx.session.default.sessionId);
+
     const document = await ctx.getFile();
     const fileName = ctx.message.document.file_name!;
     const fileKey = document.file_id!;
@@ -180,7 +176,6 @@ async function bootstrap() {
 
     if (isPdf) {
       const file = {
-        key: fileKey,
         name: fileName,
         url: url,
       };
@@ -195,28 +190,26 @@ async function bootstrap() {
         console.log("File already exsist");
         ctx.reply("File already exsist!");
       } else {
-        const createdFile = await db.file.create({
-          data: {
-            key: file.key,
-            name: file.name,
-            url: file.url,
-            sessionId: session.id,
-          },
-        });
+        ctx.session.default.file = file;
 
         const path = await document.download(dlPath);
 
         const pages = await parsePdf(path);
 
-        ctx.session.pages = pages;
+        const isValidated = validateSubscription(pages.length, daysLeft);
 
-        ctx.session.default.fileId = createdFile.id;
+        if (isValidated) {
+          ctx.session.pages = pages;
 
-        ctx.session.default.sessionId = session.id;
-
-        ctx.reply("Choose what you want to do:", {
-          reply_markup: interactMenu,
-        });
+          ctx.reply("Choose what you want to do:", {
+            reply_markup: interactMenu,
+          });
+        }
+        if (daysLeft && !isValidated) {
+          ctx.reply(
+            "You reached max limits for free tier\nSubscribe for more options",
+          );
+        }
       }
     } else {
       ctx.reply("File must be a pdf document");

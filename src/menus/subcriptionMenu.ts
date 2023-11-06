@@ -2,21 +2,12 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { getDateDifference, handleInvoice } from "../helpers";
 import { db } from "../db";
+import { getSubscription } from "../utils";
 
 export const subscriptionMenu = new Menu<BotContext>("subscription");
 
 subscriptionMenu.dynamic(async (ctx, range) => {
-  const subscriptions = await db.subscription.findMany({
-    where: {
-      sessionId: ctx.session.default.sessionId,
-    },
-  });
-  const duration = subscriptions.map((sub) =>
-    getDateDifference(sub.createdAt, sub.endedAt),
-  );
-
-  const daysLeft = duration.reduce((a, b) => a + b, 0);
-
+  const daysLeft = await getSubscription(ctx.session.default.sessionId);
   if (daysLeft) {
     ctx.reply(`You are subscribed for ${daysLeft} days`);
   } else {
