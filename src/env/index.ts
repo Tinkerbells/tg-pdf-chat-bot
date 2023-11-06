@@ -5,12 +5,11 @@ dotenv.config();
 
 const schema = z.object({
   BOT_TOKEN: z.string(),
-  PROVIDER_TOKEN: z.string(),
-  SHOP_ID: z.string(),
-  SHOP_ARTICLE_ID: z.string(),
-  PINECONE_API_KEY: z.string(),
-  PINECONE_INDEX: z.string(),
   OPENAI_API_KEY: z.string(),
+
+  // providers for payments
+  YOOKASSA_PROVIDER_TOKEN: z.string(),
+  SBER_PROVIDER_TOKEN: z.string(),
 });
 
 const parsed = schema.safeParse(process.env);

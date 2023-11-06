@@ -70,6 +70,9 @@ async function bootstrap() {
       conversation: {
         initial: () => INIT_SESSION,
       },
+      provider: {
+        initial: () => null,
+      },
     }),
   );
 
@@ -196,7 +199,7 @@ async function bootstrap() {
 
         const pages = await parsePdf(path);
 
-        const isValidated = validateSubscription(pages.length, daysLeft);
+        const isValidated = validateSubscription(pages.length, !daysLeft);
 
         if (isValidated) {
           ctx.session.pages = pages;

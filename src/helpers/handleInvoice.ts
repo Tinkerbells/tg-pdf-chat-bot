@@ -2,7 +2,10 @@ import { BotContext } from "..";
 import { db } from "../db";
 import { env } from "../env";
 import { SubscriptionPlan } from "@prisma/client";
+import { type ProviderType } from "../types/payload";
+
 export const handleInvoice = async (
+  provider: ProviderType,
   period: SubscriptionPlan,
   ctx: BotContext,
 ) => {
@@ -11,7 +14,7 @@ export const handleInvoice = async (
 
   const payload = {
     period: period,
-    provider_token: env.PROVIDER_TOKEN,
+    provider: provider,
   };
 
   const prices = await getPrice(period);
@@ -19,7 +22,7 @@ export const handleInvoice = async (
     title,
     description,
     JSON.stringify(payload),
-    env.SBER_PROVIDER_TOKEN,
+    provider.token,
     "RUB",
     prices,
   );

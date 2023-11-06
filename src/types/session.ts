@@ -1,3 +1,4 @@
+import { type ProviderType } from "./payload";
 import { PDFPage } from "./pdf";
 
 export type FileType = {
@@ -10,6 +11,7 @@ export interface SessionData {
   default: SessionType;
   pages: PDFPage[] | null;
   conversation: SessionType;
+  provider: ProviderType | null;
 }
 
 export type SessionType = {

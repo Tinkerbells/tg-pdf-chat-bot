@@ -14,6 +14,5 @@ export const validateSubscription = async (
   const isMax = files.length++ !== maxFiles;
   const isMaxPages = pagesLength++ !== maxPagesPerFile;
 
-  console.log(isMaxPages, isMax, isSubscribe);
   return isMax && isMaxPages;
 };
