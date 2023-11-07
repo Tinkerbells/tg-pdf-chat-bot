@@ -6,18 +6,19 @@ import { getSubscription, summarizeDoc } from "../utils";
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
-  const isSubscribed = await getSubscription(ctx.session.default.sessionId);
+  const daysLeft = await getSubscription(ctx.session.default.sessionId);
   range.text("Chat", async (ctx) => {
     const id = ctx.session.default.file.fileId;
     const files = ctx.session.default.files;
     const { name } = files.find((f) => f.fileId === id);
     ctx.reply(`Entering chat with ${name}:`);
+    ctx.session.conversation = ctx.session.default;
     await ctx.conversation.enter("chat");
   });
 
-  !isSubscribed && range.row();
+  !daysLeft && range.row();
 
-  if (isSubscribed) {
+  if (daysLeft) {
     range
       .text("Summarize", async (ctx) => {
         const msg = await ctx.reply("Generation summarization...");

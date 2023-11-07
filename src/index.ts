@@ -14,7 +14,7 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import { filesMenu, interactMenu, settingsMenu } from "./menus";
+import { filesMenu, interactMenu, providersMenu, settingsMenu } from "./menus";
 import { env } from "./env";
 import { db } from "./db";
 import { INIT_SESSION } from "./consts";
@@ -79,12 +79,19 @@ async function bootstrap() {
   bot.use(conversations());
 
   bot.use(settingsMenu);
+  bot.use(providersMenu);
 
   bot.command("start", async (ctx) => {
     ctx.reply("Welcome to chat with pdf bot!");
   });
 
   bot.use(getSession);
+
+  bot.command("subscribe", async (ctx) => {
+    ctx.reply("You can subscribe using these methods:", {
+      reply_markup: providersMenu,
+    });
+  });
 
   bot.command("settings", async (ctx) => {
     ctx.reply("Settings:", {
@@ -101,7 +108,7 @@ async function bootstrap() {
       ctx.message.successful_payment.invoice_payload,
     ) as PayloadType;
     const priceID = getPriceId(payload.period);
-    const endedAt = getEndDate(payload.period);
+    const { endedAt, month } = getEndDate(payload.period);
     await db.subscription.create({
       data: {
         sessionId: ctx.session.default.sessionId,
@@ -109,6 +116,7 @@ async function bootstrap() {
         endedAt: endedAt,
       },
     });
+    await ctx.reply(`You successfuly subscribed for ${payload.period}`);
   });
 
   bot.command("leave", async (ctx) => {
@@ -210,7 +218,7 @@ async function bootstrap() {
         }
         if (daysLeft && !isValidated) {
           ctx.reply(
-            "You reached max limits for free tier\nSubscribe for more options",
+            "You reached max limits for free tier\nSubscribe for more options using /subscribe",
           );
         }
       }

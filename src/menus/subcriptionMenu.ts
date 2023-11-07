@@ -1,8 +1,6 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import { getDateDifference, handleInvoice } from "../helpers";
-import { db } from "../db";
-import { getSubscription } from "../utils";
+import { handleInvoice } from "../helpers";
 
 export const subscriptionMenu = new Menu<BotContext>("subscription");
 

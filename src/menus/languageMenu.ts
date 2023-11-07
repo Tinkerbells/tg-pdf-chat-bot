@@ -9,4 +9,7 @@ export const languageMenu = new Menu<BotContext>("language")
   .text("🇺🇸 English", async (ctx) => {
     ctx.session.default.language = "english";
     await ctx.answerCallbackQuery("Default language is english");
-  });
+  })
+  .row()
+  .back("Go back")
+  .row();

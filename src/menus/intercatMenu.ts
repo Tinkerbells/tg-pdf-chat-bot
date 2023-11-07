@@ -6,7 +6,7 @@ export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
   const pages = ctx.session.pages;
-  const isSubscribed = await getSubscription(ctx.session.default.sessionId);
+  const daysLeft = await getSubscription(ctx.session.default.sessionId);
 
   range.text("Chat", async (ctx) => {
     const id = await saveFile(
@@ -16,13 +16,14 @@ interactMenu.dynamic(async (ctx, range) => {
     await storeDoc(pages, id);
     console.log("Enterinig conversation with file");
     ctx.reply("Entering chat");
+    ctx.session.default.file.fileId = id;
     ctx.session.pages = [];
     await ctx.conversation.enter("chat");
   });
 
-  !isSubscribed && range.row();
+  !daysLeft && range.row();
 
-  if (isSubscribed) {
+  if (daysLeft) {
     range
       .text("Summarize", async (ctx) => {
         const id = await saveFile(
@@ -46,6 +47,7 @@ interactMenu.dynamic(async (ctx, range) => {
         ctx.session.default.file,
         ctx.session.default.sessionId,
       );
+      await storeDoc(pages, id);
       ctx.session.default.file.fileId = id;
       await ctx.reply(`File ${ctx.session.default.file.name} is saved`);
       return;

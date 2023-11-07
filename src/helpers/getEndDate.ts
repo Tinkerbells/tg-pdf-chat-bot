@@ -6,5 +6,5 @@ export const getEndDate = (period: SubscriptionPlan) => {
   const endedAt = new Date(currentDate);
   const durationInMonths = getDuration(period);
   endedAt.setMonth(endedAt.getMonth() + durationInMonths);
-  return endedAt;
+  return { endedAt: endedAt, month: durationInMonths };
 };

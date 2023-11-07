@@ -1,14 +1,23 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { languageMenu } from "./languageMenu";
-import { subscriptionMenu } from "./subcriptionMenu";
-import { providersMenu } from "./providersMenu";
+import { getSubscription } from "../utils";
 
 export const settingsMenu = new Menu<BotContext>("settings")
   .submenu("Default language", "language")
-  .row()
-  .submenu("Manage subscription", "providers");
+  .row();
 
+settingsMenu.dynamic(async (ctx, range) => {
+  const daysLeft = await getSubscription(ctx.session.default.sessionId);
+  range
+    .text("Manage subscription", async (ctx) => {
+      daysLeft
+        ? await ctx.reply(`You subscribe for ${daysLeft} days`)
+        : await ctx.reply(
+            "You are not subscribed!\nUse /subscribe to see all available options",
+          );
+    })
+    .row();
+});
 // register all submenus
 settingsMenu.register(languageMenu);
-settingsMenu.register(providersMenu);
