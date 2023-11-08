@@ -20,7 +20,7 @@ export const getPriceId = (plan: SubscriptionPlan) => {
     case SubscriptionPlan.THREE_MONTH:
       return 2;
     case SubscriptionPlan.ONE_YEAR:
-      return 4;
+      return 3;
     default:
       throw new Error("Invalid subscription plan");
   }

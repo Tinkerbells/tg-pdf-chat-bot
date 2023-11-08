@@ -49,7 +49,7 @@ export const truncateStringByBytes = (str: string, bytes: number) => {
   return new TextDecoder("utf-8").decode(enc.encode(str).slice(0, bytes));
 };
 
-const prepareDocument = async (page: PDFPage) => {
+export const prepareDocument = async (page: PDFPage) => {
   let { pageContent } = page;
   pageContent = pageContent.replace(/\n/g, "");
   // split the docs

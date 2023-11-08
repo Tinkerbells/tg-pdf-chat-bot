@@ -1,5 +1,4 @@
 import { type ProviderType } from "./payload";
-import { PDFPage } from "./pdf";
 
 export type FileType = {
   name: string;
@@ -9,7 +8,7 @@ export type FileType = {
 
 export interface SessionData {
   default: SessionType;
-  pages: PDFPage[] | null;
+  downloadFilepath: string | null;
   conversation: SessionType;
   provider: ProviderType | null;
 }

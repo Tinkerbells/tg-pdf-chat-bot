@@ -7,17 +7,18 @@ import { parsePdf } from "./parsePdf";
 import { PDFPage } from "../types/pdf";
 import { getTranslation } from "./getTranslation";
 import { detectLanguage } from "./detectLanguage";
+import { Document } from "langchain/document";
 
-export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
-  if (!docs) {
-    const file = await db.file.findFirst({
-      where: { id: fileId },
-    });
+export const summarizeDoc = async (fileId: string) => {
+  const fildDocs = await db.document.findMany({
+    where: {
+      fileId: fileId,
+    },
+  });
 
-    const dlPath = await downloadDoc(file.url, file.id);
-
-    docs = await parsePdf(dlPath);
-  }
+  const docs = fildDocs.map((doc) => {
+    return new Document({ pageContent: doc.content });
+  });
 
   const model = new OpenAI({
     temperature: 0,
@@ -33,7 +34,7 @@ export const summarizeDoc = async (fileId: string, docs?: PDFPage[]) => {
       const res = await chain.call({
         input_documents: docs,
       });
-      const textPart = docs[0].pageContent.slice(0, 200).replace(/\n/g, "");
+      const textPart = fildDocs[0].content.slice(0, 200).replace(/\n/g, "");
       const language = await detectLanguage(textPart);
       const text = await getTranslation(res.text, language);
       return text;

@@ -1,14 +1,19 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import { getSubscription, saveFile, storeDoc, summarizeDoc } from "../utils";
+import {
+  getSubscription,
+  parsePdf,
+  saveFile,
+  storeDoc,
+  summarizeDoc,
+} from "../utils";
 
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
-  const pages = ctx.session.pages;
   const daysLeft = await getSubscription(ctx.session.default.sessionId);
-
   range.text("Chat", async (ctx) => {
+    const pages = await parsePdf(ctx.session.downloadFilepath);
     const id = await saveFile(
       ctx.session.default.file,
       ctx.session.default.sessionId,
@@ -17,7 +22,6 @@ interactMenu.dynamic(async (ctx, range) => {
     console.log("Enterinig conversation with file");
     ctx.reply("Entering chat");
     ctx.session.default.file.fileId = id;
-    ctx.session.pages = [];
     await ctx.conversation.enter("chat");
   });
 
@@ -26,23 +30,25 @@ interactMenu.dynamic(async (ctx, range) => {
   if (daysLeft) {
     range
       .text("Summarize", async (ctx) => {
+        const pages = await parsePdf(ctx.session.downloadFilepath);
         const id = await saveFile(
           ctx.session.default.file,
           ctx.session.default.sessionId,
         );
+        await storeDoc(pages, id);
         const msg = await ctx.reply("Summarizing...");
-        const text = await summarizeDoc(id, pages);
+        const text = await summarizeDoc(id);
         ctx.api.editMessageText(
           msg.chat.id,
           msg.message_id,
           "Answer:\n" + text,
         );
-        ctx.session.pages = [];
       })
       .row();
   }
   range
     .text("Save", async (ctx) => {
+      const pages = await parsePdf(ctx.session.downloadFilepath);
       const id = await saveFile(
         ctx.session.default.file,
         ctx.session.default.sessionId,
