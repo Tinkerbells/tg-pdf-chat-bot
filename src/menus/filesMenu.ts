@@ -6,13 +6,12 @@ import { getSubscription, summarizeDoc } from "../utils";
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
-  const daysLeft = await getSubscription(ctx.session.default.sessionId);
+  const daysLeft = await getSubscription(ctx.from.id.toString());
   range.text("Chat", async (ctx) => {
-    const id = ctx.session.default.file.fileId;
-    const files = ctx.session.default.files;
+    const id = ctx.session.file.fileId;
+    const files = ctx.session.files;
     const { name } = files.find((f) => f.fileId === id);
     ctx.reply(`Entering chat with ${name}:`);
-    ctx.session.conversation = ctx.session.default;
     await ctx.conversation.enter("chat");
   });
 
@@ -22,7 +21,7 @@ fileMenu.dynamic(async (ctx, range) => {
     range
       .text("Summarize", async (ctx) => {
         const msg = await ctx.reply("Generation summarization...");
-        const text = await summarizeDoc(ctx.session.default.file.fileId);
+        const text = await summarizeDoc(ctx.session.file.fileId);
         ctx.api.editMessageText(
           msg.chat.id,
           msg.message_id,
@@ -33,8 +32,8 @@ fileMenu.dynamic(async (ctx, range) => {
   }
   range
     .text("Delete", async (ctx) => {
-      const id = ctx.session.default.file.fileId;
-      const files = ctx.session.default.files;
+      const id = ctx.session.file.fileId;
+      const files = ctx.session.files;
       const { name } = files.find((f) => f.fileId === id);
       try {
         await db.$transaction([
@@ -42,10 +41,10 @@ fileMenu.dynamic(async (ctx, range) => {
           db.document.deleteMany({ where: { fileId: id } }),
           db.file.delete({ where: { id: id } }),
         ]);
-        ctx.session.default.files = files.filter((f) => f.fileId !== id);
+        ctx.session.files = files.filter((f) => f.fileId !== id);
         console.log(`File ${name} deleted succsesfully`);
         ctx.reply(`File ${name} deleted succsesfully`);
-        if (ctx.session.default.files.length !== 0) {
+        if (ctx.session.files.length !== 0) {
           ctx.menu.back();
         }
       } catch (error) {
@@ -60,11 +59,11 @@ fileMenu.dynamic(async (ctx, range) => {
 export const filesMenu = new Menu<BotContext>("files");
 
 filesMenu.dynamic((ctx, range) => {
-  const files = ctx.session.default.files;
+  const files = ctx.session.files;
   files.forEach((file) =>
     range
       .submenu(file.name, "file", async (ctx) => {
-        ctx.session.default.file.fileId = file.fileId;
+        ctx.session.file.fileId = file.fileId;
       })
       .row(),
   );

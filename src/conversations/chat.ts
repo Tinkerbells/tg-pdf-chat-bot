@@ -25,8 +25,8 @@ export const chat = async (
 ) => {
   while (true) {
     ctx = await conversation.waitFor("message");
-    const sessionId = conversation.session.default.sessionId;
-    const fileId = conversation.session.default.file.fileId;
+    const sessionId = ctx.from.id.toString();
+    const fileId = conversation.session.file.fileId;
 
     // Converting telegram voice message to text
     if (ctx.message) {
@@ -59,7 +59,6 @@ export const chat = async (
       } else {
         userMessage = ctx.message.text;
       }
-      conversation.external(() => console.log(userMessage));
       const message = await conversation.external(() =>
         db.message.create({
           data: {
@@ -89,7 +88,6 @@ export const chat = async (
       const results = await conversation.external(() =>
         getMatches(message.text, fileId),
       );
-
       const context = results
         .map((r) => r.pageContent)
         .join("\n\n")
@@ -110,7 +108,6 @@ export const chat = async (
       const result = await conversation.external(() =>
         getCompletions(assistantPrompt, message.text),
       );
-
       await ctx.api.editMessageText(
         msg.chat.id,
         msg.message_id,

@@ -38,6 +38,7 @@ export const storeDoc = async (pages: PDFPage[], fileId: string) => {
       ),
     );
     console.log("Vectors are stored!");
+    return;
   } catch (error) {
     console.log("Error while trying to store doc:", Error);
     throw error;

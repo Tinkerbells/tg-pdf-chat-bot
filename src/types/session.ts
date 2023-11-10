@@ -9,13 +9,41 @@ export type FileType = {
 export interface SessionData {
   default: SessionType;
   downloadFilepath: string | null;
-  conversation: SessionType;
   provider: ProviderType | null;
 }
 
 export type SessionType = {
-  sessionId: string | null;
-  file: FileType;
+  file: FileType | null;
   files: FileType[] | null;
-  language: string;
+  __language_code: string | null;
+  downloadFilepath: string | null;
+  provider: ProviderType | null;
 };
+
+export interface Session {
+  id: string;
+  value: string;
+}
+
+interface Where {
+  id: string;
+}
+
+interface Create {
+  id: string;
+  value: string;
+}
+
+interface Update {
+  value: string;
+}
+
+export interface SessionDelegate {
+  findUnique: (input: { where: Where }) => Promise<Session | null>;
+  upsert: (input: {
+    where: Where;
+    create: Create;
+    update: Update;
+  }) => Promise<Session>;
+  delete: (input: { where: Where }) => Promise<Session>;
+}

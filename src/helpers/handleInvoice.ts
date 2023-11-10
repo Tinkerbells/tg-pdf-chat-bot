@@ -1,6 +1,5 @@
 import { BotContext } from "..";
 import { db } from "../db";
-import { env } from "../env";
 import { SubscriptionPlan } from "@prisma/client";
 import { type ProviderType } from "../types/payload";
 
@@ -18,14 +17,20 @@ export const handleInvoice = async (
   };
 
   const prices = await getPrice(period);
-  ctx.replyWithInvoice(
-    title,
-    description,
-    JSON.stringify(payload),
-    provider.token,
-    "RUB",
-    prices,
-  );
+
+  try {
+    await ctx.replyWithInvoice(
+      title,
+      description,
+      JSON.stringify(payload),
+      provider.token,
+      "RUB",
+      prices,
+    );
+  } catch (error) {
+    console.log("Error while sending invoice:", error);
+    throw error;
+  }
 };
 
 async function getPrice(period: SubscriptionPlan) {

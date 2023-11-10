@@ -10,3 +10,4 @@ export * from "./summarizeDoc";
 export * from "./getSubscription";
 export * from "./validateSubscription";
 export * from "./saveFile";
+export * from "./getSessionKey";

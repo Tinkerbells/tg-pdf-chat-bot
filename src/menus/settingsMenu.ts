@@ -8,7 +8,7 @@ export const settingsMenu = new Menu<BotContext>("settings")
   .row();
 
 settingsMenu.dynamic(async (ctx, range) => {
-  const daysLeft = await getSubscription(ctx.session.default.sessionId);
+  const daysLeft = await getSubscription(ctx.from.id.toString());
   range
     .text("Manage subscription", async (ctx) => {
       daysLeft

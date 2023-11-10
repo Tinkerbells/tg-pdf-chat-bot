@@ -1,10 +1,9 @@
 import { env } from "../env";
 
 export const INIT_SESSION = {
-  sessionId: null,
-  file: null,
-  files: null,
-  language: null,
+  file: {},
+  files: [],
+  __language_code: "ru",
 };
 
 export const PROVIDERS = [
