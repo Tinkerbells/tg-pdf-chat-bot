@@ -22,11 +22,7 @@ fileMenu.dynamic(async (ctx, range) => {
       .text("Summarize", async (ctx) => {
         const msg = await ctx.reply("Generation summarization...");
         const text = await summarizeDoc(ctx.session.file.fileId);
-        ctx.api.editMessageText(
-          msg.chat.id,
-          msg.message_id,
-          "Answer:\n" + text,
-        );
+        await msg.editText("Answer:\n" + text);
       })
       .row();
   }

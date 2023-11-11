@@ -16,7 +16,7 @@ export const handleInvoice = async (
     provider: provider,
   };
 
-  const prices = await getPrice(period);
+  const prices = await getPrices(period);
 
   try {
     await ctx.replyWithInvoice(
@@ -33,7 +33,7 @@ export const handleInvoice = async (
   }
 };
 
-async function getPrice(period: SubscriptionPlan) {
+async function getPrices(period: SubscriptionPlan) {
   const { price } = await db.price.findFirst({ where: { plan: period } });
   const prices = [{ label: period.toLowerCase(), amount: price * 100 }];
   return prices;

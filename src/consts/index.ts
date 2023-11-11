@@ -3,7 +3,7 @@ import { env } from "../env";
 export const INIT_SESSION = {
   file: {},
   files: [],
-  __language_code: "ru",
+  __language_code: "en",
 };
 
 export const PROVIDERS = [

@@ -33,11 +33,7 @@ interactMenu.dynamic(async (ctx, range) => {
         await storeDoc(pages, id);
         const msg = await ctx.reply("Summarizing...");
         const text = await summarizeDoc(id);
-        ctx.api.editMessageText(
-          msg.chat.id,
-          msg.message_id,
-          "Answer:\n" + text,
-        );
+        await msg.editText("Answer:\n" + text);
       })
       .row();
   }

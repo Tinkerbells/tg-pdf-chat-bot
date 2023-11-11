@@ -6,20 +6,15 @@ export type FileType = {
   url?: string;
 };
 
-export interface SessionData {
-  default: SessionType;
-  downloadFilepath: string | null;
-  provider: ProviderType | null;
-}
-
 export type SessionType = {
-  file: FileType | null;
-  files: FileType[] | null;
-  __language_code: string | null;
-  downloadFilepath: string | null;
-  provider: ProviderType | null;
+  file?: FileType;
+  files?: FileType[];
+  downloadFilepath?: string;
+  provider?: ProviderType;
+  __language_code?: string;
 };
 
+// Prisma adapter types
 export interface Session {
   id: string;
   value: string;

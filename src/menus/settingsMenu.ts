@@ -19,5 +19,5 @@ settingsMenu.dynamic(async (ctx, range) => {
     })
     .row();
 });
-// register all submenus
+
 settingsMenu.register(languageMenu);
