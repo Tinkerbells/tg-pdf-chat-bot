@@ -6,6 +6,7 @@ dotenv.config();
 const schema = z.object({
   BOT_TOKEN: z.string(),
   OPENAI_API_KEY: z.string(),
+  REDIS_PASSWORD: z.string(),
 
   // providers for payments
   YOOKASSA_PROVIDER_TOKEN: z.string(),

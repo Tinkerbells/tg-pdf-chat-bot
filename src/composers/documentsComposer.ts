@@ -1,9 +1,10 @@
 import { Composer } from "grammy";
 import { BotContext } from "..";
 import { db } from "../db";
-import { getSubscription, validateSubscription } from "../utils";
 import { checkIsPdf, createTmpPath } from "../helpers";
 import { interactMenu } from "../menus";
+import { Subscription } from "../subscription";
+import { MAX_FILE_LIMIT_FREE, MAX_FILE_LIMIT_PRO } from "../consts";
 
 export const documentComposer = new Composer<BotContext>();
 
@@ -23,13 +24,14 @@ documentComposer.on([":document"], async (ctx) => {
     );
     return;
   }
+  const subscription = new Subscription();
 
-  const daysLeft = await getSubscription(ctx.from.id.toString());
+  const isSubscribed = await subscription.isSubscribed(ctx.from.id.toString());
 
   const document = await ctx.getFile();
-  const fileName = ctx.message.document.file_name!;
-  const fileKey = document.file_id!;
-  const filePath = document.file_path!;
+  const fileName = ctx.message.document.file_name;
+  const fileKey = document.file_id;
+  const filePath = document.file_path;
   const url = document.getUrl();
   const isPdf = checkIsPdf(filePath!);
   const dlPath = createTmpPath(fileKey);
@@ -48,28 +50,37 @@ documentComposer.on([":document"], async (ctx) => {
 
     if (uniqueFile) {
       console.log("File already exsist");
-      ctx.reply("File already exsist!");
+      await ctx.reply("File already exsist!");
     } else {
       ctx.session.file = file;
 
       const path = await document.download(dlPath);
 
-      const isValidated = validateSubscription(!daysLeft);
+      // Validation
+      const maxFilesLimit = isSubscribed
+        ? MAX_FILE_LIMIT_PRO
+        : MAX_FILE_LIMIT_FREE;
+      const now = new Date();
 
-      if (isValidated) {
+      const timeout =
+        ctx.session.filesUploadTimeout &&
+        subscription.getDateDifference(ctx.session.filesUploadTimeout, now) < 0;
+
+      if (ctx.session.filesCount++ <= maxFilesLimit && !timeout) {
         ctx.session.downloadFilepath = path;
 
-        ctx.reply("Choose what you want to do:", {
+        await ctx.reply("Choose what you want to do:", {
           reply_markup: interactMenu,
         });
-      }
-      if (daysLeft && !isValidated) {
-        ctx.reply(
-          "You reached max limits for free tier\nSubscribe for more options",
+      } else {
+        const timeout = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        ctx.session.filesUploadTimeout = timeout;
+        await ctx.reply(
+          "You reached max files for free tier\nSubscribe for more options",
         );
       }
     }
   } else {
-    ctx.reply("File must be a pdf document");
+    await ctx.reply("File must be a pdf document");
   }
 });

@@ -22,9 +22,11 @@ import { db } from "./db";
 import { getSessionKey } from "./utils";
 import { type SessionType } from "./types/session";
 import { PrismaAdapter } from "./prismaAdapter";
-
+import { limit } from "@grammyjs/ratelimiter";
 import { run, sequentialize } from "@grammyjs/runner";
 import { documentComposer, filesComposer, paymentComposer } from "./composers";
+import { redis } from "./lib";
+import { INIT_SESSION } from "./consts";
 
 export type BotContext = HydrateFlavor<
   FileFlavor<Context> &
@@ -48,17 +50,38 @@ const i18n = new I18n<BotContext>({
 
 const bot = new Bot<BotContext, BotApi>(env.BOT_TOKEN);
 
+// additional plugins
 bot.use(hydrate());
 
 bot.api.config.use(hydrateFiles(bot.token));
 
 bot.use(sequentialize(getSessionKey));
 
+// sessions
 bot.use(
   session({
     storage: new PrismaAdapter<SessionType>(db.session),
-    initial: () => ({}),
+    initial: () => INIT_SESSION,
     getSessionKey: getSessionKey,
+  }),
+);
+
+// ratelimiter;
+bot.use(
+  limit({
+    // Allow only 1 messages to be handled every 1.5 seconds.
+    timeFrame: 1500,
+    limit: 1,
+
+    storageClient: redis,
+
+    onLimitExceeded: async (ctx) => {
+      await ctx.reply("Please refrain from sending too many requests!");
+    },
+
+    keyGenerator: (ctx) => {
+      return ctx.from?.id.toString();
+    },
   }),
 );
 

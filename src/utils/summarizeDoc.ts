@@ -2,11 +2,6 @@ import { OpenAI } from "langchain/llms/openai";
 import { loadSummarizationChain } from "langchain/chains";
 import { env } from "../env";
 import { db } from "../db";
-import { downloadDoc } from "../helpers";
-import { parsePdf } from "./parsePdf";
-import { PDFPage } from "../types/pdf";
-import { getTranslation } from "./getTranslation";
-import { detectLanguage } from "./detectLanguage";
 import { Document } from "langchain/document";
 
 export const summarizeDoc = async (fileId: string) => {
@@ -35,9 +30,10 @@ export const summarizeDoc = async (fileId: string) => {
         input_documents: docs,
       });
       const textPart = fildDocs[0].content.slice(0, 200).replace(/\n/g, "");
-      const language = await detectLanguage(textPart);
-      const text = await getTranslation(res.text, language);
-      return text;
+      // TODO FIX THIS
+      // const language = await detectLanguage(textPart);
+      // const text = await getTranslation(res.text, language);
+      return textPart;
     } catch (error) {
       console.log("Error while summarizing:", error);
       throw error;
