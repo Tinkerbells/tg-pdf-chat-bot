@@ -1,33 +1,39 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import {
-  getSubscription,
-  parsePdf,
-  saveFile,
-  storeDoc,
-  summarizeDoc,
-} from "../utils";
+import { parsePdf, saveFile, storeDoc, summarizeDoc } from "../utils";
 import { Subscription } from "../subscription";
-import { MAX_PAGES_LIMIT_FREE, MAX_PAGES_LIMIT_PRO } from "../consts";
+import { MAX_PAGES_LIMIT_FREE } from "../consts";
 
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
-  const subscription = new Subscription();
+  const file = ctx.session.file;
   const sessionId = ctx.from.id.toString();
-  const isSubscribe = await subscription.isSubscribed(sessionId);
+  const subscription = new Subscription(sessionId);
+  const isSubscribe = await subscription.isSubscribed();
+
+  const { maxPages } = await subscription.limits();
+  const maxLimitPages = isSubscribe ? maxPages : MAX_PAGES_LIMIT_FREE;
+
+  const validate = async (pages: number) => {
+    if (pages > maxLimitPages) {
+      if (isSubscribe) {
+        await ctx.reply(ctx.t("subscription_pages_limit_warning"));
+      } else {
+        await ctx.reply(ctx.t("subscription_free_pages_limit_warning"));
+      }
+      return false;
+    }
+    return true;
+  };
+
   range.text("Chat", async (ctx) => {
     const pages = await parsePdf(ctx.session.downloadFilepath);
-    const maxLimitPages = isSubscribe
-      ? MAX_PAGES_LIMIT_PRO
-      : MAX_PAGES_LIMIT_FREE;
-    if (pages.length > maxLimitPages) {
-      await ctx.reply(
-        "Too many pages in document!" + !isSubscribe &&
-          "\n/subscribe to get more pags per document",
-      );
+    const validation = await validate(pages.length);
+    if (!validation) {
+      return;
     }
-    const id = await saveFile(ctx.session.file, sessionId);
+    const id = await saveFile(file, sessionId);
     await storeDoc(pages, id);
     console.log("Enterinig conversation with file");
     ctx.reply("Entering chat");
@@ -35,13 +41,17 @@ interactMenu.dynamic(async (ctx, range) => {
     await ctx.conversation.enter("chat");
   });
 
-  if (isSubscribe) {
+  if (!isSubscribe) {
     range.row();
   } else {
     range
       .text("Summarize", async (ctx) => {
         const pages = await parsePdf(ctx.session.downloadFilepath);
-        const id = await saveFile(ctx.session.file, sessionId);
+        const validation = await validate(pages.length);
+        if (!validation) {
+          return;
+        }
+        const id = await saveFile(file, sessionId);
         await storeDoc(pages, id);
         const msg = await ctx.reply("Summarizing...");
         const text = await summarizeDoc(id);
@@ -53,13 +63,18 @@ interactMenu.dynamic(async (ctx, range) => {
   range
     .text("Save", async (ctx) => {
       const pages = await parsePdf(ctx.session.downloadFilepath);
-      const id = await saveFile(ctx.session.file, sessionId);
+      const validation = await validate(pages.length);
+      if (!validation) {
+        return;
+      }
+      const id = await saveFile(file, sessionId);
+      console.log(file);
       // await storeDoc(pages, id);
       ctx.session.filesCount++;
       ctx.session.file.fileId = id;
-      await ctx.reply(`File ${ctx.session.file.name} is saved`);
+      await ctx.reply(`File ${file.name} is saved`);
       return;
     })
     .row();
-  range.url("Open in browser", ctx.session.file.url).row();
+  range.url("Open in browser", file.url).row();
 });

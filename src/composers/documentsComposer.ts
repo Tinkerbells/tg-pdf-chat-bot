@@ -4,7 +4,7 @@ import { db } from "../db";
 import { checkIsPdf, createTmpPath } from "../helpers";
 import { interactMenu } from "../menus";
 import { Subscription } from "../subscription";
-import { MAX_FILE_LIMIT_FREE, MAX_FILE_LIMIT_PRO } from "../consts";
+import { MAX_FILE_LIMIT_FREE } from "../consts";
 
 export const documentComposer = new Composer<BotContext>();
 
@@ -24,9 +24,9 @@ documentComposer.on([":document"], async (ctx) => {
     );
     return;
   }
-  const subscription = new Subscription();
+  const subscription = new Subscription(ctx.from.id.toString());
 
-  const isSubscribed = await subscription.isSubscribed(ctx.from.id.toString());
+  const isSubscribed = await subscription.isSubscribed();
 
   const document = await ctx.getFile();
   const fileName = ctx.message.document.file_name;
@@ -57,16 +57,16 @@ documentComposer.on([":document"], async (ctx) => {
       const path = await document.download(dlPath);
 
       // Validation
-      const maxFilesLimit = isSubscribed
-        ? MAX_FILE_LIMIT_PRO
-        : MAX_FILE_LIMIT_FREE;
+
+      const { maxFiles } = await subscription.limits();
+      const maxFilesLimit = isSubscribed ? maxFiles : MAX_FILE_LIMIT_FREE;
       const now = new Date();
 
       const timeout =
         ctx.session.filesUploadTimeout &&
         subscription.getDateDifference(ctx.session.filesUploadTimeout, now) < 0;
 
-      if (ctx.session.filesCount++ <= maxFilesLimit && !timeout) {
+      if (ctx.session.filesCount + 1 < maxFilesLimit && !timeout) {
         ctx.session.downloadFilepath = path;
 
         await ctx.reply("Choose what you want to do:", {
@@ -75,9 +75,11 @@ documentComposer.on([":document"], async (ctx) => {
       } else {
         const timeout = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         ctx.session.filesUploadTimeout = timeout;
-        await ctx.reply(
-          "You reached max files for free tier\nSubscribe for more options",
-        );
+        if (isSubscribed) {
+          await ctx.reply(ctx.t("subscription_files_limit_warning"));
+          return;
+        }
+        await ctx.reply(ctx.t("subscription_free_files_limit_warning"));
       }
     }
   } else {

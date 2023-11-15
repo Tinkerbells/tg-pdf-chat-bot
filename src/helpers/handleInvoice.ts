@@ -18,10 +18,11 @@ export const handleInvoice = async (
 
   const prices = await getPrices(period);
 
+  console.log(ctx.t("payment_description").toString());
   try {
     await ctx.replyWithInvoice(
-      title,
-      description,
+      ctx.t(period),
+      ctx.t("payment_description").toString(),
       JSON.stringify(payload),
       provider.token,
       "RUB",

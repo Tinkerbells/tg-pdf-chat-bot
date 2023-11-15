@@ -1,15 +1,15 @@
-import { SubscriptionPlan, Subscription as Sub } from "@prisma/client";
+import { SubscriptionPlan } from "@prisma/client";
 import { db } from "../db";
 
 export class Subscription {
-  private plan: SubscriptionPlan;
+  private sessionId: string;
 
-  constructor(plan?: SubscriptionPlan) {
-    this.plan = plan;
+  constructor(sessionId: string) {
+    this.sessionId = sessionId;
   }
 
-  getDuration() {
-    switch (this.plan) {
+  getDuration(plan: SubscriptionPlan) {
+    switch (plan) {
       case SubscriptionPlan.ONE_MONTH:
         return 1;
       case SubscriptionPlan.THREE_MONTH:
@@ -21,8 +21,8 @@ export class Subscription {
     }
   }
 
-  getPriceId() {
-    switch (this.plan) {
+  getPriceId(plan: SubscriptionPlan) {
+    switch (plan) {
       case SubscriptionPlan.ONE_MONTH:
         return 1;
       case SubscriptionPlan.THREE_MONTH:
@@ -47,21 +47,21 @@ export class Subscription {
     return daysDifference;
   }
 
-  getEndDate() {
+  getEndDate(plan: SubscriptionPlan) {
     const currentDate = new Date();
     const endedAt = new Date(currentDate);
-    const durationInMonths = this.getDuration();
+    const durationInMonths = this.getDuration(plan);
     endedAt.setMonth(endedAt.getMonth() + durationInMonths);
     return endedAt;
   }
 
-  async create(id: string) {
-    const priceId = this.getPriceId();
-    const endedAt = this.getEndDate();
+  async create(plan: SubscriptionPlan) {
+    const priceId = this.getPriceId(plan);
+    const endedAt = this.getEndDate(plan);
     try {
       const subscription = await db.subscription.create({
         data: {
-          sessionId: id,
+          sessionId: this.sessionId,
           priceId: priceId,
           endedAt: endedAt,
         },
@@ -73,10 +73,10 @@ export class Subscription {
     }
   }
 
-  private async get(id: string) {
+  private async get() {
     let subscriptions = await db.subscription.findMany({
       where: {
-        sessionId: id,
+        sessionId: this.sessionId,
       },
     });
 
@@ -97,8 +97,8 @@ export class Subscription {
     return updatedSubs;
   }
 
-  async remaining(id: string) {
-    const subscriptions = await this.get(id);
+  async remaining() {
+    const subscriptions = await this.get();
 
     const duration = subscriptions
       .map((sub) => {
@@ -110,8 +110,17 @@ export class Subscription {
     return duration;
   }
 
-  async isSubscribed(id: string) {
-    const subscriptions = await this.get(id);
+  async limits() {
+    const subscriptions = await this.get();
+    const limits = {
+      maxFiles: subscriptions[0].maxFiles,
+      maxPages: subscriptions[0].maxFiles,
+    };
+    return limits;
+  }
+
+  async isSubscribed() {
+    const subscriptions = await this.get();
     return subscriptions.length > 0;
   }
 }

@@ -3,7 +3,5 @@ export * from "./getEmbeddings";
 export * from "./storeDoc";
 export * from "./getMatches";
 export * from "./summarizeDoc";
-export * from "./getSubscription";
-export * from "./validateSubscription";
 export * from "./saveFile";
 export * from "./getSessionKey";

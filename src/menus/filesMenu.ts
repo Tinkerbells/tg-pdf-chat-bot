@@ -1,12 +1,15 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { db } from "../db";
-import { getSubscription, summarizeDoc } from "../utils";
+import { summarizeDoc } from "../utils";
+import { Subscription } from "../subscription";
 
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
-  const daysLeft = await getSubscription(ctx.from.id.toString());
+  const subscription = new Subscription(ctx.from.id.toString());
+  const isSubscribe = await subscription.isSubscribed();
+
   range.text("Chat", async (ctx) => {
     const id = ctx.session.file.fileId;
     const files = ctx.session.files;
@@ -15,9 +18,9 @@ fileMenu.dynamic(async (ctx, range) => {
     await ctx.conversation.enter("chat");
   });
 
-  !daysLeft && range.row();
-
-  if (daysLeft) {
+  if (!isSubscribe) {
+    range.row();
+  } else {
     range
       .text("Summarize", async (ctx) => {
         const msg = await ctx.reply("Generation summarization...");
@@ -26,6 +29,7 @@ fileMenu.dynamic(async (ctx, range) => {
       })
       .row();
   }
+
   range
     .text("Delete", async (ctx) => {
       const id = ctx.session.file.fileId;

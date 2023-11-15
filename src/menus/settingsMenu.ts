@@ -1,7 +1,6 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { languageMenu } from "./languageMenu";
-import { getSubscription } from "../utils";
 import { Subscription } from "../subscription";
 
 export const settingsMenu = new Menu<BotContext>("settings")
@@ -9,15 +8,15 @@ export const settingsMenu = new Menu<BotContext>("settings")
   .row();
 
 settingsMenu.dynamic(async (ctx, range) => {
-  const subscription = new Subscription();
-  const remaining = await subscription.remaining(ctx.from.id.toString());
+  const subscription = new Subscription(ctx.from.id.toString());
+  const remaining = await subscription.remaining();
   range
-    .text("Manage subscription", async (ctx) => {
+    .text(ctx.t("subscription_manage"), async (ctx) => {
       remaining
-        ? await ctx.reply(`You subscribe for ${remaining} days`)
-        : await ctx.reply(
-            "You are not subscribed!\nUse /subscribe to see all available options",
-          );
+        ? await ctx.reply(
+            ctx.t("subscription_remaining", { remaining: remaining }),
+          )
+        : await ctx.reply(ctx.t("subscription_warning"));
     })
     .row();
 });

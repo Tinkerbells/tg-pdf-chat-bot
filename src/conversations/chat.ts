@@ -26,9 +26,9 @@ export const chat = async (
     // Converting telegram voice message to text
     let userMessage = "";
     if (ctx.message.voice) {
-      const subscription = new Subscription();
+      const subscription = new Subscription(sessionId);
       const isSubscribed = await conversation.external(() =>
-        subscription.isSubscribed(sessionId),
+        subscription.isSubscribed(),
       );
       if (isSubscribed) {
         await ctx.reply(
@@ -81,7 +81,7 @@ export const chat = async (
         orderBy: {
           createdAt: "asc",
         },
-        take: 6,
+        take: 4,
       }),
     );
 
@@ -97,7 +97,7 @@ export const chat = async (
     const context = results
       .map((r) => r.pageContent)
       .join("\n\n")
-      .slice(0, 3800); // slice before achieving max tokens
+      .slice(0, 4000); // slice before achieving max tokens
 
     const assistantMessage = createAssistantPrompt(
       context,

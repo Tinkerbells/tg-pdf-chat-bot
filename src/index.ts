@@ -18,14 +18,13 @@ import {
 import { chat } from "./conversations";
 import { filesMenu, interactMenu, providersMenu, settingsMenu } from "./menus";
 import { env } from "./env";
-import { db } from "./db";
+import { db, redis } from "./db";
 import { getSessionKey } from "./utils";
 import { type SessionType } from "./types/session";
 import { PrismaAdapter } from "./prismaAdapter";
 import { limit } from "@grammyjs/ratelimiter";
 import { run, sequentialize } from "@grammyjs/runner";
 import { documentComposer, filesComposer, paymentComposer } from "./composers";
-import { redis } from "./lib";
 import { INIT_SESSION } from "./consts";
 
 export type BotContext = HydrateFlavor<
@@ -69,9 +68,9 @@ bot.use(
 // ratelimiter;
 bot.use(
   limit({
-    // Allow only 1 messages to be handled every 1.5 seconds.
-    timeFrame: 1500,
-    limit: 1,
+    // Allow only 3 messages to be handled every 2 seconds.
+    timeFrame: 2000,
+    limit: 3,
 
     storageClient: redis,
 
@@ -94,7 +93,7 @@ bot.use(settingsMenu);
 bot.use(providersMenu);
 
 bot.command("start", async (ctx) => {
-  await ctx.reply(ctx.t("start"));
+  await ctx.reply(ctx.t("payment_description"));
 });
 
 bot.command("settings", async (ctx) => {
