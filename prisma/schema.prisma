@@ -12,18 +12,18 @@ datasource db {
 }
 
 model Session {
-  id           String         @id @unique
-  value        String
-  File         File[]
-  Message      Message[]
-  Subscription Subscription[]
+  id            String         @id @unique
+  value         String
+  file          File[]
+  messages      Message[]
+  subscriptions Subscription[]
 }
 
 model Document {
   id      String                 @id @default(cuid())
   content String
   vector  Unsupported("vector")?
-  File    File                   @relation(fields: [fileId], references: [id])
+  file    File                   @relation(fields: [fileId], references: [id])
   fileId  String
 }
 
@@ -35,12 +35,12 @@ model File {
   messages Message[]
 
   documentId String?
-  Document   Document[]
+  documents  Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Session   Session? @relation(fields: [sessionId], references: [id])
+  session   Session? @relation(fields: [sessionId], references: [id])
   sessionId String?
 }
 
@@ -54,10 +54,10 @@ model Message {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  File   File   @relation(fields: [fileId], references: [id])
+  file   File   @relation(fields: [fileId], references: [id])
   fileId String
 
-  Session   Session? @relation(fields: [sessionId], references: [id])
+  session   Session? @relation(fields: [sessionId], references: [id])
   sessionId String?
 }
 
@@ -68,7 +68,9 @@ model Subscription {
   updatedAt DateTime @updatedAt
   endedAt   DateTime
   priceId   Int
-  Session   Session? @relation(fields: [sessionId], references: [id])
+  maxFiles  Int      @default(25)
+  maxPages  Int      @default(50)
+  session   Session? @relation(fields: [sessionId], references: [id])
   sessionId String?
 }
 
@@ -79,10 +81,10 @@ enum SubscriptionPlan {
 }
 
 model Price {
-  id           Int              @id @default(autoincrement())
-  plan         SubscriptionPlan
-  price        Int
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  Subscription Subscription[]
+  id            Int              @id @default(autoincrement())
+  plan          SubscriptionPlan
+  price         Int
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  subscriptions Subscription[]
 }
