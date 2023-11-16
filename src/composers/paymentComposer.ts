@@ -8,7 +8,7 @@ import { db } from "../db";
 export const paymentComposer = new Composer<BotContext>();
 
 paymentComposer.command("subscribe", async (ctx) => {
-  ctx.reply("You can subscribe using these methods:", {
+  ctx.reply(ctx.t("providers_menu_text"), {
     reply_markup: providersMenu,
   });
 });
@@ -25,5 +25,11 @@ paymentComposer.on(":successful_payment", async (ctx) => {
   const subscription = new Subscription(sessionId);
   await subscription.create(payload.period);
   ctx.session.filesUploadTimeout = null;
-  await ctx.reply(`You successfuly subscribed for ${payload.period}`);
+  ctx.session.provider = null;
+  await ctx.reply(
+    ctx.t(
+      "subscription_success" +
+        ctx.t(payload.period).split(" ").slice(0, 2).join(" "), // remove last subscription word
+    ),
+  );
 });

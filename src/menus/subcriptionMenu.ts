@@ -1,25 +1,26 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { handleInvoice } from "../helpers";
+import { SubscriptionPlan } from "@prisma/client";
 
 export const subscriptionMenu = new Menu<BotContext>("subscription");
 
+const options: SubscriptionPlan[] = [
+  SubscriptionPlan.ONE_MONTH,
+  SubscriptionPlan.THREE_MONTH,
+  SubscriptionPlan.ONE_YEAR,
+];
+
 subscriptionMenu.dynamic(async (ctx, range) => {
   const provider = ctx.session.provider;
-  range
-    .text("Subscribe for 1 month", async (ctx) => {
-      await handleInvoice(provider, "ONE_MONTH", ctx);
-    })
-    .row();
-  range
-    .text("Subscribe for 3 month", async (ctx) => {
-      await handleInvoice(provider, "THREE_MONTH", ctx);
-    })
-    .row();
-  range
-    .text("Subscribe for one year", async (ctx) => {
-      await handleInvoice(provider, "ONE_YEAR", ctx);
-    })
-    .row()
-    .back("Go back");
+  options.forEach((opt) =>
+    range
+      .text(ctx.t(opt), async () => {
+        await handleInvoice(provider, opt, ctx);
+      })
+      .row(),
+  );
+  range.back(ctx.t("back"), async (ctx) => {
+    await ctx.editMessageText(ctx.t("providers_menu_text"));
+  });
 });

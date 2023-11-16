@@ -1,5 +1,7 @@
 import { SubscriptionPlan } from "@prisma/client";
 import { db } from "../db";
+import { MAX_FILE_LIMIT_FREE, MAX_PAGES_LIMIT_FREE } from "../consts";
+import { getDateDifference } from "../utils";
 
 export class Subscription {
   private sessionId: string;
@@ -32,19 +34,6 @@ export class Subscription {
       default:
         throw new Error("Invalid subscription price id");
     }
-  }
-
-  getDateDifference(start: Date, end: Date) {
-    const oneDay = 24 * 60 * 60 * 1000; // in milliseconds
-    if (typeof start === "string") {
-      start = new Date(start);
-    }
-    if (typeof end === "string") {
-      end = new Date(end);
-    }
-    const difference = end.getTime() - start.getTime();
-    const daysDifference = Math.floor(difference / oneDay);
-    return daysDifference;
   }
 
   getEndDate(plan: SubscriptionPlan) {
@@ -81,7 +70,7 @@ export class Subscription {
     });
 
     const updatedSubs = subscriptions.filter(async (sub) => {
-      const diff = this.getDateDifference(sub.createdAt, sub.endedAt);
+      const diff = getDateDifference(sub.createdAt, sub.endedAt);
       if (diff < 0) {
         await db.subscription.delete({
           where: {
@@ -102,7 +91,7 @@ export class Subscription {
 
     const duration = subscriptions
       .map((sub) => {
-        const diff = this.getDateDifference(sub.createdAt, sub.endedAt);
+        const diff = getDateDifference(sub.createdAt, sub.endedAt);
         return diff;
       })
       .reduce((a, b) => a + b, 0);
@@ -113,8 +102,14 @@ export class Subscription {
   async limits() {
     const subscriptions = await this.get();
     const limits = {
-      maxFiles: subscriptions[0].maxFiles,
-      maxPages: subscriptions[0].maxFiles,
+      maxFiles:
+        subscriptions.length > 0
+          ? subscriptions[0].maxFiles
+          : MAX_FILE_LIMIT_FREE,
+      maxPages:
+        subscriptions.length > 0
+          ? subscriptions[0].maxPages
+          : MAX_PAGES_LIMIT_FREE,
     };
     return limits;
   }

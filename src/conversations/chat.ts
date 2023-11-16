@@ -31,9 +31,7 @@ export const chat = async (
         subscription.isSubscribed(),
       );
       if (isSubscribed) {
-        await ctx.reply(
-          "You are not allowed to use this feature\nPlease use /subscribe to subscribe for more options",
-        );
+        await ctx.reply(ctx.t("subscription_voice_warning"));
         continue;
       }
 
@@ -41,7 +39,7 @@ export const chat = async (
 
       // check if audio file is less than 25mb for openai api
       if (audio.file_size > 24 * 1024 * 1024) {
-        await ctx.reply("Voice message to large!");
+        await ctx.reply(ctx.t("chat_voice_large_warning"));
         continue;
       }
 
@@ -53,12 +51,10 @@ export const chat = async (
       userMessage = await conversation.external(() =>
         openai.transcription(outputPath),
       );
-      await ctx.reply("Your question:\n" + userMessage);
+      await ctx.reply("🎤 :" + userMessage);
       await conversation.external(() => unlinkFile(path));
     } else if (ctx.message.text.charAt(0) === "/") {
-      await ctx.reply(
-        "Your question should not start with /, please try again",
-      );
+      await ctx.reply(ctx.t("chat_command_warning"));
       continue;
     } else {
       userMessage = ctx.message.text;
@@ -109,7 +105,7 @@ export const chat = async (
         .join("\n"),
     );
 
-    const msg = await ctx.reply("Generating answer...");
+    const msg = await ctx.reply(ctx.t("chat_loader"));
 
     const messages = [
       { role: openai.roles.ASSISTANT, content: assistantMessage },
@@ -123,7 +119,7 @@ export const chat = async (
     await ctx.api.editMessageText(
       msg.chat.id,
       msg.message_id,
-      "Assistant answer:\n" + result,
+      ctx.t("chat_assistant") + "\n" + result,
       { reply_markup: replyKeyboard },
     );
 

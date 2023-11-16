@@ -2,7 +2,6 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { parsePdf, saveFile, storeDoc, summarizeDoc } from "../utils";
 import { Subscription } from "../subscription";
-import { MAX_PAGES_LIMIT_FREE } from "../consts";
 
 export const interactMenu = new Menu<BotContext>("interact");
 
@@ -11,12 +10,12 @@ interactMenu.dynamic(async (ctx, range) => {
   const sessionId = ctx.from.id.toString();
   const subscription = new Subscription(sessionId);
   const isSubscribe = await subscription.isSubscribed();
+  const now = new Date();
+  const filesCount = ctx.session.filesCount;
+  const { maxPages, maxFiles } = await subscription.limits();
 
-  const { maxPages } = await subscription.limits();
-  const maxLimitPages = isSubscribe ? maxPages : MAX_PAGES_LIMIT_FREE;
-
-  const validate = async (pages: number) => {
-    if (pages > maxLimitPages) {
+  const validatePages = async (pages: number) => {
+    if (pages > maxPages) {
       if (isSubscribe) {
         await ctx.reply(ctx.t("subscription_pages_limit_warning"));
       } else {
@@ -27,16 +26,38 @@ interactMenu.dynamic(async (ctx, range) => {
     return true;
   };
 
+  const validateFiles = async () => {
+    if (filesCount + 1 > maxFiles) {
+      if (isSubscribe) {
+        await ctx.reply(ctx.t("subscription_files_limit_warning"));
+      } else {
+        await ctx.reply(ctx.t("subscription_free_files_limit_warning"));
+      }
+      ctx.session.filesUploadTimeout = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
+      return false;
+    }
+    ctx.session.filesCount++;
+    return true;
+  };
+
   range.text("Chat", async (ctx) => {
+    const filesValidation = await validateFiles();
+    if (!filesValidation) {
+      return;
+    }
     const pages = await parsePdf(ctx.session.downloadFilepath);
-    const validation = await validate(pages.length);
-    if (!validation) {
+    const pagesValidaton = await validatePages(pages.length);
+    if (!pagesValidaton) {
       return;
     }
     const id = await saveFile(file, sessionId);
     await storeDoc(pages, id);
     console.log("Enterinig conversation with file");
-    ctx.reply("Entering chat");
+    ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
+      parse_mode: "HTML",
+    });
     ctx.session.file.fileId = id;
     await ctx.conversation.enter("chat");
   });
@@ -46,33 +67,42 @@ interactMenu.dynamic(async (ctx, range) => {
   } else {
     range
       .text("Summarize", async (ctx) => {
+        const filesValidation = await validateFiles();
+        if (!filesValidation) {
+          return;
+        }
         const pages = await parsePdf(ctx.session.downloadFilepath);
-        const validation = await validate(pages.length);
-        if (!validation) {
+        const pagesValidaton = await validatePages(pages.length);
+        if (!pagesValidaton) {
           return;
         }
         const id = await saveFile(file, sessionId);
         await storeDoc(pages, id);
-        const msg = await ctx.reply("Summarizing...");
+        const msg = await ctx.reply(ctx.t("chat_loader"));
         const text = await summarizeDoc(id);
-        await msg.editText("Answer:\n" + text);
+        await msg.editText(ctx.t("chat_assistant") + " " + text);
       })
       .row();
   }
 
   range
     .text("Save", async (ctx) => {
+      const filesValidation = await validateFiles();
+      console.log(filesValidation);
+      if (!filesValidation) {
+        return;
+      }
       const pages = await parsePdf(ctx.session.downloadFilepath);
-      const validation = await validate(pages.length);
-      if (!validation) {
+      const pagesValidaton = await validatePages(pages.length);
+      if (!pagesValidaton) {
         return;
       }
       const id = await saveFile(file, sessionId);
-      console.log(file);
-      // await storeDoc(pages, id);
-      ctx.session.filesCount++;
+      await storeDoc(pages, id);
+      await ctx.reply(ctx.t("files_saved", { fileName: file.name }), {
+        parse_mode: "HTML",
+      });
       ctx.session.file.fileId = id;
-      await ctx.reply(`File ${file.name} is saved`);
       return;
     })
     .row();

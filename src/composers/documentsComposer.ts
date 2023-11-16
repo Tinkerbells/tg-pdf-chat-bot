@@ -4,7 +4,7 @@ import { db } from "../db";
 import { checkIsPdf, createTmpPath } from "../helpers";
 import { interactMenu } from "../menus";
 import { Subscription } from "../subscription";
-import { MAX_FILE_LIMIT_FREE } from "../consts";
+import { getDateDifference } from "../utils";
 
 export const documentComposer = new Composer<BotContext>();
 
@@ -50,31 +50,32 @@ documentComposer.on([":document"], async (ctx) => {
 
     if (uniqueFile) {
       console.log("File already exsist");
-      await ctx.reply("File already exsist!");
+      await ctx.reply(ctx.t("files_already_exist"));
     } else {
       ctx.session.file = file;
 
       const path = await document.download(dlPath);
 
       // Validation
-
       const { maxFiles } = await subscription.limits();
-      const maxFilesLimit = isSubscribed ? maxFiles : MAX_FILE_LIMIT_FREE;
       const now = new Date();
+      const timeout = ctx.session.filesUploadTimeout;
+      let isValid = true;
 
-      const timeout =
-        ctx.session.filesUploadTimeout &&
-        subscription.getDateDifference(ctx.session.filesUploadTimeout, now) < 0;
+      if (timeout) {
+        isValid = getDateDifference(ctx.session.filesUploadTimeout, now) > 0;
+      }
 
-      if (ctx.session.filesCount + 1 < maxFilesLimit && !timeout) {
+      if (ctx.session.filesCount + 1 < maxFiles && isValid) {
         ctx.session.downloadFilepath = path;
-
-        await ctx.reply("Choose what you want to do:", {
+        await ctx.reply(ctx.t("interact_menu_text"), {
           reply_markup: interactMenu,
         });
       } else {
-        const timeout = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        ctx.session.filesUploadTimeout = timeout;
+        ctx.session.filesCount = 0;
+        ctx.session.filesUploadTimeout = new Date(
+          now.getTime() + 30 * 24 * 60 * 60 * 1000,
+        );
         if (isSubscribed) {
           await ctx.reply(ctx.t("subscription_files_limit_warning"));
           return;
@@ -83,6 +84,6 @@ documentComposer.on([":document"], async (ctx) => {
       }
     }
   } else {
-    await ctx.reply("File must be a pdf document");
+    await ctx.reply(ctx.t("files_pdf_only_warning"));
   }
 });

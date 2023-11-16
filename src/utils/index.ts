@@ -5,3 +5,4 @@ export * from "./getMatches";
 export * from "./summarizeDoc";
 export * from "./saveFile";
 export * from "./getSessionKey";
+export * from "./getDateDifference";

@@ -26,6 +26,7 @@ import { limit } from "@grammyjs/ratelimiter";
 import { run, sequentialize } from "@grammyjs/runner";
 import { documentComposer, filesComposer, paymentComposer } from "./composers";
 import { INIT_SESSION } from "./consts";
+import { deleteFiles, ignoreOld } from "./middlewares";
 
 export type BotContext = HydrateFlavor<
   FileFlavor<Context> &
@@ -65,6 +66,10 @@ bot.use(
   }),
 );
 
+// custom middlewares
+bot.use(ignoreOld());
+bot.use(deleteFiles);
+
 // ratelimiter;
 bot.use(
   limit({
@@ -93,11 +98,11 @@ bot.use(settingsMenu);
 bot.use(providersMenu);
 
 bot.command("start", async (ctx) => {
-  await ctx.reply(ctx.t("payment_description"));
+  await ctx.reply(ctx.t("start"));
 });
 
 bot.command("settings", async (ctx) => {
-  ctx.reply("Settings:", {
+  ctx.reply(ctx.t("settings_menu_text"), {
     reply_markup: settingsMenu,
   });
 });

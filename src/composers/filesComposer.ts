@@ -20,10 +20,11 @@ filesComposer.command("files", async (ctx) => {
   });
 
   if (!!files.length) {
-    ctx.reply(`You have ${files.length} pdf documents:`, {
+    ctx.reply(ctx.t("files_menu_text", { count: files.length }), {
       reply_markup: filesMenu,
+      parse_mode: "HTML",
     });
   } else {
-    ctx.reply("You doesn't have any document yet");
+    ctx.reply(ctx.t("files_not_found"));
   }
 });

@@ -5,11 +5,12 @@ import { subscriptionMenu } from "./subcriptionMenu";
 
 export const providersMenu = new Menu<BotContext>("providers");
 
-providersMenu.dynamic((ctx, range) => {
+providersMenu.dynamic((_, range) => {
   PROVIDERS.map((provider) => {
     range
-      .submenu(provider.name, "subscription", async (ctx) => {
+      .submenu("💳" + " " + provider.name, "subscription", async (ctx) => {
         ctx.session.provider = provider;
+        await ctx.editMessageText(ctx.t("subscription_menu_text"));
       })
       .row();
   });
