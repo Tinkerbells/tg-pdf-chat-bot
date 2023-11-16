@@ -60,6 +60,8 @@ chat_command_warning = Your question should not start with /!
 
 chat_loader = 💡 Processing request... 
 chat_assistant = 🤖 Assistant answer:
+
+
 # MENUS
 files_menu_text = { $count -> 
                       [one] You have <b>{$count}</b> pdf document
@@ -76,3 +78,10 @@ subscription_menu_text = Choose what type of subscription you want:
 language_menu_text = 🌐 Default language
 
 language_default = The default language is English🇺🇸
+
+summarize_button = ✂️ Summarize 
+
+chat_button = 💬 Chat
+
+save_button = 💾 Save
+
