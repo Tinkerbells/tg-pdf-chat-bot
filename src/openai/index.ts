@@ -1,8 +1,12 @@
 import OpenAI from "openai";
+import { OpenAI as AI } from "langchain/llms/openai";
 import fs from "fs";
 import { MessageType } from "../types/openai";
 import { env } from "../env";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { Document } from "langchain/document";
+import { db } from "../db";
+import { loadSummarizationChain } from "langchain/chains";
+import { logger } from "../logger";
 
 export class OpenAIAdapter {
   private openai: OpenAI;
@@ -27,7 +31,7 @@ export class OpenAIAdapter {
       });
       return response.text;
     } catch (error) {
-      console.log("Error while transcription", error.message);
+      logger.error(`Error while transcription: ${error}`);
       throw error;
     }
   }
@@ -41,19 +45,41 @@ export class OpenAIAdapter {
       });
       return response.choices[0].message.content;
     } catch (error) {
-      console.log("Error while getting completions:", error);
+      logger.error(`Error while getting completions: ${error}`);
       throw error;
     }
   }
 
-  async embeddings() {
+  async summarizeDoc(fileId: string) {
+    const fildDocs = await db.document.findMany({
+      where: {
+        fileId: fileId,
+      },
+    });
+
+    const docs = fildDocs.map((doc) => {
+      return new Document({ pageContent: doc.content });
+    });
+
+    const model = new AI({
+      temperature: 0,
+      openAIApiKey: env.OPENAI_API_KEY,
+    });
+
+    const chain = loadSummarizationChain(model, {
+      type: "map_reduce",
+    });
     try {
-      const embeddings = new OpenAIEmbeddings({
-        openAIApiKey: env.OPENAI_API_KEY,
+      const res = await chain.call({
+        input_documents: docs,
       });
-      return embeddings;
+      const textPart = fildDocs[0].content.slice(0, 200).replace(/\n/g, "");
+      // TODO FIX THIS
+      // const language = await detectLanguage(textPart);
+      // const text = await getTranslation(res.text, language);
+      return textPart;
     } catch (error) {
-      console.log("Error calling openai embeddings:", error);
+      logger.error(`Error while summarizing: ${error}`);
       throw error;
     }
   }

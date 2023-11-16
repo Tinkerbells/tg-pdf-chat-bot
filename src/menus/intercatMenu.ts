@@ -1,16 +1,18 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import { parsePdf, saveFile, storeDoc, summarizeDoc } from "../utils";
 import { Subscription } from "../subscription";
+import { PdfHandler } from "../pdf";
+import { OpenAIAdapter } from "../openai";
 
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
-  const file = ctx.session.file;
   const sessionId = ctx.from.id.toString();
+  const openai = new OpenAIAdapter();
+  const pdf = new PdfHandler(ctx.session.downloadFilepath);
   const subscription = new Subscription(sessionId);
+  const file = ctx.session.file;
   const isSubscribe = await subscription.isSubscribed();
-  const now = new Date();
   const filesCount = ctx.session.filesCount;
   const { maxPages, maxFiles } = await subscription.limits();
 
@@ -34,7 +36,7 @@ interactMenu.dynamic(async (ctx, range) => {
         await ctx.reply(ctx.t("subscription_free_files_limit_warning"));
       }
       ctx.session.filesUploadTimeout = new Date(
-        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+        new Date().getTime() + 30 * 24 * 60 * 60 * 1000,
       );
       return false;
     }
@@ -42,18 +44,18 @@ interactMenu.dynamic(async (ctx, range) => {
     return true;
   };
 
-  range.text("Chat", async (ctx) => {
+  range.text(ctx.t("chat_button"), async (ctx) => {
     const filesValidation = await validateFiles();
     if (!filesValidation) {
       return;
     }
-    const pages = await parsePdf(ctx.session.downloadFilepath);
+    const pages = await pdf.parse();
     const pagesValidaton = await validatePages(pages.length);
     if (!pagesValidaton) {
       return;
     }
-    const id = await saveFile(file, sessionId);
-    await storeDoc(pages, id);
+    const id = await pdf.save(file, sessionId);
+    await pdf.store(pages, id);
     console.log("Enterinig conversation with file");
     ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
       parse_mode: "HTML",
@@ -66,39 +68,39 @@ interactMenu.dynamic(async (ctx, range) => {
     range.row();
   } else {
     range
-      .text("Summarize", async (ctx) => {
+      .text(ctx.t("summarize_button"), async (ctx) => {
         const filesValidation = await validateFiles();
         if (!filesValidation) {
           return;
         }
-        const pages = await parsePdf(ctx.session.downloadFilepath);
+        const pages = await pdf.parse();
         const pagesValidaton = await validatePages(pages.length);
         if (!pagesValidaton) {
           return;
         }
-        const id = await saveFile(file, sessionId);
-        await storeDoc(pages, id);
+        const id = await pdf.save(file, sessionId);
+        await pdf.store(pages, id);
         const msg = await ctx.reply(ctx.t("chat_loader"));
-        const text = await summarizeDoc(id);
+        const text = await openai.summarizeDoc(id);
         await msg.editText(ctx.t("chat_assistant") + " " + text);
       })
       .row();
   }
 
   range
-    .text("Save", async (ctx) => {
+    .text(ctx.t("save_button"), async (ctx) => {
       const filesValidation = await validateFiles();
       console.log(filesValidation);
       if (!filesValidation) {
         return;
       }
-      const pages = await parsePdf(ctx.session.downloadFilepath);
+      const pages = await pdf.parse();
       const pagesValidaton = await validatePages(pages.length);
       if (!pagesValidaton) {
         return;
       }
-      const id = await saveFile(file, sessionId);
-      await storeDoc(pages, id);
+      const id = await pdf.save(file, sessionId);
+      await pdf.store(pages, id);
       await ctx.reply(ctx.t("files_saved", { fileName: file.name }), {
         parse_mode: "HTML",
       });
@@ -106,5 +108,5 @@ interactMenu.dynamic(async (ctx, range) => {
       return;
     })
     .row();
-  range.url("Open in browser", file.url).row();
+  // range.url("Open in browser", file.url).row();
 });

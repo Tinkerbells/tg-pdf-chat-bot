@@ -3,7 +3,6 @@ import { BotContext } from "..";
 import { providersMenu } from "../menus";
 import { PayloadType } from "../types/payload";
 import { Subscription } from "../subscription";
-import { db } from "../db";
 
 export const paymentComposer = new Composer<BotContext>();
 

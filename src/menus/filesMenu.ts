@@ -1,16 +1,16 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
-import { db } from "../db";
-import { summarizeDoc } from "../utils";
 import { Subscription } from "../subscription";
+import { OpenAIAdapter } from "../openai";
 
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
+  const openai = new OpenAIAdapter();
   const subscription = new Subscription(ctx.from.id.toString());
   const isSubscribe = await subscription.isSubscribed();
 
-  range.text("Chat", async (ctx) => {
+  range.text(ctx.t("save_button"), async (ctx) => {
     const id = ctx.session.file.fileId;
     const files = ctx.session.files;
     const { name } = files.find((f) => f.fileId === id);
@@ -24,9 +24,9 @@ fileMenu.dynamic(async (ctx, range) => {
     range.row();
   } else {
     range
-      .text("Summarize", async (ctx) => {
+      .text(ctx.t("summarize_button"), async (ctx) => {
         const msg = await ctx.reply(ctx.t("chat_loader"));
-        const text = await summarizeDoc(ctx.session.file.fileId);
+        const text = await openai.summarizeDoc(ctx.session.file.fileId);
         await msg.editText(ctx.t("chat_assistant") + " " + text);
       })
       .row();

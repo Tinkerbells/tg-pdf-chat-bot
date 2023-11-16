@@ -1,16 +1,14 @@
 import { BotContext } from "..";
 import { db } from "../db";
 import { SubscriptionPlan } from "@prisma/client";
-import { type ProviderType } from "../types/payload";
+import type { ProviderType } from "../types/payload";
+import { logger } from "../logger";
 
 export const handleInvoice = async (
   provider: ProviderType,
   period: SubscriptionPlan,
   ctx: BotContext,
 ) => {
-  const title = `${period.toLowerCase()}`;
-  const description = `Desc: ${period.toLowerCase()}`;
-
   const payload = {
     period: period,
     provider: provider,
@@ -29,7 +27,7 @@ export const handleInvoice = async (
       prices,
     );
   } catch (error) {
-    console.log("Error while sending invoice:", error);
+    logger.error(`Error while sending invoice: ${error}`);
     throw error;
   }
 };

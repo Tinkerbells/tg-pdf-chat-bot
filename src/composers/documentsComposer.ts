@@ -1,10 +1,11 @@
 import { Composer } from "grammy";
 import { BotContext } from "..";
 import { db } from "../db";
-import { checkIsPdf, createTmpPath } from "../helpers";
+import { createTmpPath } from "../helpers";
 import { interactMenu } from "../menus";
 import { Subscription } from "../subscription";
 import { getDateDifference } from "../utils";
+import { PdfHandler } from "../pdf";
 
 export const documentComposer = new Composer<BotContext>();
 
@@ -33,7 +34,8 @@ documentComposer.on([":document"], async (ctx) => {
   const fileKey = document.file_id;
   const filePath = document.file_path;
   const url = document.getUrl();
-  const isPdf = checkIsPdf(filePath!);
+  const pdf = new PdfHandler(filePath);
+  const isPdf = pdf.check();
   const dlPath = createTmpPath(fileKey);
 
   if (isPdf) {

@@ -1,11 +1,11 @@
 import fs from "fs";
+import { logger } from "../logger";
 
 export const unlinkFile = async (path: string) => {
   fs.unlink(path, (error) => {
     if (error) {
-      console.log(`Error while unlinkig file ${path}`, error);
+      logger.error(`Error while unlinkig file ${path} - ${error}`);
       throw error;
     }
-    console.log("File deleted successfully");
   });
 };

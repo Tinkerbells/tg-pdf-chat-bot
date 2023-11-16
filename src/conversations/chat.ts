@@ -1,13 +1,13 @@
 import { Conversation } from "@grammyjs/conversations";
-import { getMatches } from "../utils";
 import { createAssistantPrompt, createTmpPath, unlinkFile } from "../helpers";
 import { db } from "../db";
-import { BotContext } from "..";
+import type { BotContext } from "..";
 import { InlineKeyboard } from "grammy";
 import { OpenAIAdapter } from "../openai";
-import { MessageType } from "../types/openai";
+import type { MessageType } from "../types/openai";
 import { OggConvertor } from "../oggConvertor";
 import { Subscription } from "../subscription";
+import { PdfHandler } from "../pdf";
 
 type ChatPdfConversation = Conversation<BotContext>;
 
@@ -86,8 +86,10 @@ export const chat = async (
       content: msg.text,
     }));
 
+    const pdf = new PdfHandler();
+
     const results = await conversation.external(() =>
-      getMatches(message.text, fileId),
+      pdf.matches(message.text, fileId),
     );
 
     const context = results
