@@ -1,10 +1,5 @@
 import { Conversation } from "@grammyjs/conversations";
-import {
-  createAssistantPrompt,
-  createTmpPath,
-  getRandomAdvice,
-  unlinkFile,
-} from "../helpers";
+import { createAssistantPrompt, createTmpPath, unlinkFile } from "../helpers";
 import { db } from "../db";
 import type { BotContext } from "..";
 import { OpenAIAdapter } from "../openai";
