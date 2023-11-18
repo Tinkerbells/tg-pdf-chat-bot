@@ -1,3 +1,4 @@
+export * from "./rootMenu";
 export * from "./filesMenu";
 export * from "./intercatMenu";
 export * from "./languageMenu";

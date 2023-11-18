@@ -81,5 +81,3 @@ filesMenu.dynamic((ctx, range) => {
   );
   return range;
 });
-
-filesMenu.register(fileMenu);

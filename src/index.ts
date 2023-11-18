@@ -22,6 +22,7 @@ import {
   interactMenu,
   leaveMenu,
   providersMenu,
+  rootMenu,
   settingsMenu,
   startMenu,
 } from "./menus";
@@ -32,7 +33,14 @@ import { type SessionType } from "./types/session";
 import { PrismaAdapter } from "./prismaAdapter";
 import { limit } from "@grammyjs/ratelimiter";
 import { run, sequentialize } from "@grammyjs/runner";
-import { documentComposer, filesComposer, paymentComposer } from "./composers";
+import {
+  documentComposer,
+  filesComposer,
+  leaveComposer,
+  mainComposer,
+  paymentComposer,
+  settingsComposer,
+} from "./composers";
 import { INIT_SESSION } from "./consts";
 import { deleteFiles, ignoreOld } from "./middlewares";
 import { logger } from "./logger";
@@ -101,78 +109,13 @@ bot.use(i18n);
 
 bot.use(conversations());
 
-bot.use(settingsMenu);
-bot.use(providersMenu);
-bot.use(leaveMenu);
-bot.use(startMenu);
-bot.use(disableAdviceMenu);
+// menuts
+bot.use(rootMenu);
 
-bot.command("start", async (ctx) => {
-  await bot.api.setMyCommands([
-    {
-      command: "start",
-      description: "Start using the bot and get an introduction. ",
-    },
-    { command: "help", description: "Show list of available commands" },
-    {
-      command: "about",
-      description: "Get information about bot.",
-    },
-    {
-      command: "settings",
-      description: "Access and modify your bot settings.",
-    },
-    {
-      command: "subscribe",
-      description: "Subscribe for a premium features.",
-    },
-    {
-      command: "files",
-      description: "Access and manage documents within the bot.",
-    },
-    {
-      command: "leave",
-      description: "To leave chat",
-    },
-  ]);
-  await ctx.reply(ctx.t("start"), { reply_markup: startMenu });
-  logger.info(`New user: ${ctx.from.username} - ${ctx.from.id}`);
-});
-
-bot.command("help", async (ctx) => {
-  await ctx.reply(ctx.t("help"), { parse_mode: "HTML" });
-});
-
-bot.command("about", async (ctx) => {
-  await ctx.reply(ctx.t("about"), { parse_mode: "HTML" });
-});
-
-bot.command("settings", async (ctx) => {
-  ctx.reply(ctx.t("settings_menu_text"), {
-    reply_markup: settingsMenu,
-  });
-});
-
-bot.command("leave", async (ctx) => {
-  await ctx.conversation.exit();
-  await db.message.deleteMany({
-    where: {
-      fileId: ctx.session.file.fileId,
-    },
-  });
-  await ctx.reply(ctx.t("leave_mesasge"));
-});
-
-bot.callbackQuery("leave", async (ctx) => {
-  await ctx.conversation.exit("chat");
-  await db.message.deleteMany({
-    where: {
-      fileId: ctx.session.file.fileId,
-    },
-  });
-  await ctx.reply(ctx.t("leave_mesasge"));
-  await ctx.answerCallbackQuery("leave_chat");
-});
+// Composers and conversations
+bot.use(mainComposer);
+bot.use(settingsComposer);
+bot.use(leaveComposer);
 
 bot.use(createConversation(chat));
 
