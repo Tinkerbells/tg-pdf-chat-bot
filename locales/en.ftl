@@ -21,10 +21,7 @@ ONE_YEAR = 12 months subscription
 # Settings manage subscription 
 subscription_manage = 🔄 Manage subscription
 
-subscription_remaining = { $remainig -> 
-                      [one] Your subscription will end in <b>{$remainig}</b> day
-                      *[other] Your subscription will end in <b>{$remainig}</b> days
-}
+subscription_remaining = Your subscription will end in <b>{$remaining}</b> days
 
 subscription_success  = You successfuly subscribed for 
 
@@ -51,6 +48,7 @@ files_not_found = You don't have documents yet
 files_already_exist = File already exsist!
 files_pdf_only_warninig = The file must be in pdf format!
 files_saved = File saved <b>{$fileName}</b>
+files_file_option = File - <b>{$file}</b>
 
 # CHAT
 chat_enter = 💬 Entering chat with file <b>{$fileName}</b>:
