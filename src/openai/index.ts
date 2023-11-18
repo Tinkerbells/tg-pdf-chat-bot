@@ -7,6 +7,7 @@ import { Document } from "langchain/document";
 import { db } from "../db";
 import { loadSummarizationChain } from "langchain/chains";
 import { logger } from "../logger";
+import { PromptTemplate } from "langchain/prompts";
 
 export class OpenAIAdapter {
   private openai: OpenAI;
@@ -67,8 +68,19 @@ export class OpenAIAdapter {
       openAIApiKey: env.OPENAI_API_KEY,
     });
 
+    const template = `Write a concise summary of the following:
+                      Return your response in bullet points which covers the key points of the text
+
+"{text}"
+
+
+BULLET POINT SUMMARY:`;
+
+    const prompt = PromptTemplate.fromTemplate(template);
+
     const chain = loadSummarizationChain(model, {
       type: "map_reduce",
+      combinePrompt: prompt,
     });
 
     // TODO make complite swap to gpt-3.5 model
@@ -76,10 +88,6 @@ export class OpenAIAdapter {
       const res = await chain.call({
         input_documents: docs,
       });
-      const textPart = fildDocs[0].content.slice(0, 200).replace(/\n/g, "");
-      // TODO FIX THIS
-      // const language = await detectLanguage(textPart);
-      // const text = await getTranslation(res.text, language);
       return res.text;
     } catch (error) {
       logger.error(`Error while summarizing: ${error}`);

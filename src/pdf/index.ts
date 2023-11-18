@@ -74,7 +74,7 @@ export class PdfHandler {
         ),
       );
     } catch (error) {
-      console.log("Error while trying to store doc:", Error);
+      logger.error(`Error while trying to store doc: ${error}`);
       throw error;
     }
   }
@@ -103,7 +103,7 @@ export class PdfHandler {
       const results = await vectorStore.similaritySearch(message, 4); // search for 4 docs
       return results;
     } catch (error) {
-      console.log("Error while gettings matches:", error);
+      logger.error(`Error while gettings matches: ${error}`);
       throw error;
     }
   }
@@ -129,7 +129,7 @@ export class PdfHandler {
       const docs = await splitter.createDocuments([pageContent]);
       return docs;
     } catch (error) {
-      console.log(`Error while splitting documents: ${error}`);
+      logger.error(`Error while splitting documents: ${error}`);
     }
   }
 }

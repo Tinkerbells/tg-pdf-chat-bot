@@ -2,6 +2,7 @@ import { SubscriptionPlan } from "@prisma/client";
 import { db } from "../db";
 import { MAX_FILE_LIMIT_FREE, MAX_PAGES_LIMIT_FREE } from "../consts";
 import { getDateDifference } from "../utils";
+import { logger } from "../logger";
 
 export class Subscription {
   private sessionId: string;
@@ -55,9 +56,9 @@ export class Subscription {
           endedAt: endedAt,
         },
       });
-      console.log(`Subscription ${subscription.id} created!`);
+      logger.info(`Subscription ${subscription.id} created!`);
     } catch (error) {
-      console.log(error);
+      logger.error(`Error while creating subscription: ${error}`);
       throw error;
     }
   }
@@ -77,7 +78,7 @@ export class Subscription {
             id: sub.id,
           },
         });
-        console.log(`Subscription ${sub.id} has ended`);
+        logger.info(`Subscription ${sub.id} has ended`);
         return false;
       }
       return true;

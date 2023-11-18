@@ -2,16 +2,14 @@ import { Conversation } from "@grammyjs/conversations";
 import { createAssistantPrompt, createTmpPath, unlinkFile } from "../helpers";
 import { db } from "../db";
 import type { BotContext } from "..";
-import { InlineKeyboard } from "grammy";
 import { OpenAIAdapter } from "../openai";
 import type { MessageType } from "../types/openai";
 import { OggConvertor } from "../oggConvertor";
 import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
+import { leaveMenu } from "../menus";
 
 type ChatPdfConversation = Conversation<BotContext>;
-
-const replyKeyboard = new InlineKeyboard().text("Leave chat", "leave");
 
 export const chat = async (
   conversation: ChatPdfConversation,
@@ -30,8 +28,10 @@ export const chat = async (
       const isSubscribed = await conversation.external(() =>
         subscription.isSubscribed(),
       );
-      if (isSubscribed) {
-        await ctx.reply(ctx.t("subscription_voice_warning"));
+      if (!isSubscribed) {
+        await ctx.reply(ctx.t("subscription_voice_warning"), {
+          reply_markup: leaveMenu,
+        });
         continue;
       }
 
@@ -39,7 +39,9 @@ export const chat = async (
 
       // check if audio file is less than 25mb for openai api
       if (audio.file_size > 24 * 1024 * 1024) {
-        await ctx.reply(ctx.t("chat_voice_large_warning"));
+        await ctx.reply(ctx.t("chat_voice_large_warning"), {
+          reply_markup: leaveMenu,
+        });
         continue;
       }
 
@@ -54,7 +56,10 @@ export const chat = async (
       await ctx.reply("🎤 :" + userMessage);
       await conversation.external(() => unlinkFile(path));
     } else if (ctx.message.text.charAt(0) === "/") {
-      await ctx.reply(ctx.t("chat_command_warning"));
+      await ctx.reply(ctx.t("chat_command_warning"), {
+        reply_markup: leaveMenu,
+        parse_mode: "HTML",
+      });
       continue;
     } else {
       userMessage = ctx.message.text;
@@ -117,12 +122,11 @@ export const chat = async (
     const result = await conversation.external(() =>
       openai.chat(messages as MessageType[]),
     );
-
     await ctx.api.editMessageText(
       msg.chat.id,
       msg.message_id,
       ctx.t("chat_assistant") + "\n" + result,
-      { reply_markup: replyKeyboard },
+      { reply_markup: leaveMenu, parse_mode: "HTML" },
     );
 
     await conversation.external(() =>

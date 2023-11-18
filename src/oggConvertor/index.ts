@@ -1,5 +1,6 @@
 import ffmpeg from "fluent-ffmpeg";
 import installer from "@ffmpeg-installer/ffmpeg";
+import { logger } from "../logger";
 
 export class OggConvertor {
   constructor() {
@@ -16,7 +17,7 @@ export class OggConvertor {
           .run();
       });
     } catch (e) {
-      console.log("Error while creating mp3", e.message);
+      logger.error(`Error while creating mp3: ${e}`);
       throw e;
     }
   }

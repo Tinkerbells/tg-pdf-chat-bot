@@ -2,6 +2,7 @@ import { NextFunction, session } from "grammy";
 import { BotContext } from "..";
 import { db } from "../db";
 import { getDateDifference } from "../utils";
+import { logger } from "../logger";
 
 export async function deleteFiles(
   ctx: BotContext,
@@ -36,11 +37,10 @@ export async function deleteFiles(
           db.file.delete({ where: { id: id } }),
         ]);
       } catch (error) {
-        console.log("Error while deleting file", error);
+        logger.error(`Error while deleting file: ${error}`);
         throw error;
       }
     });
-    console.log("All files deleted");
   }
 
   await next();

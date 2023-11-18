@@ -56,7 +56,6 @@ interactMenu.dynamic(async (ctx, range) => {
     }
     const id = await pdf.save(file, sessionId);
     await pdf.store(pages, id);
-    console.log("Enterinig conversation with file");
     ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
       parse_mode: "HTML",
     });
@@ -80,9 +79,11 @@ interactMenu.dynamic(async (ctx, range) => {
         }
         const id = await pdf.save(file, sessionId);
         await pdf.store(pages, id);
-        const msg = await ctx.reply(ctx.t("chat_loader"));
         const text = await openai.summarizeDoc(id);
-        await msg.editText(ctx.t("chat_assistant") + " " + text);
+        const msg = await ctx.reply(ctx.t("chat_loader"));
+        await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
+          parse_mode: "HTML",
+        });
       })
       .row();
   }

@@ -16,7 +16,14 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import { filesMenu, interactMenu, providersMenu, settingsMenu } from "./menus";
+import {
+  filesMenu,
+  interactMenu,
+  leaveMenu,
+  providersMenu,
+  settingsMenu,
+  startMenu,
+} from "./menus";
 import { env } from "./env";
 import { db, redis } from "./db";
 import { getSessionKey } from "./utils";
@@ -94,23 +101,48 @@ bot.use(i18n);
 bot.use(conversations());
 
 bot.use(settingsMenu);
-
 bot.use(providersMenu);
+bot.use(leaveMenu);
+bot.use(startMenu);
 
 bot.command("start", async (ctx) => {
-  // await bot.api.setMyCommands([
-  //   {
-  //     command: "start",
-  //     description: "Start using the bot and get an introduction.",
-  //   },
-  //   { command: "help", description: "Show list of available commands" },
-  //   {
-  //     command: "settings",
-  //     description: "Access and modify your bot settings.",
-  //   },
-  // ]);
-  await ctx.reply(ctx.t("start"));
-  logger.info(`New user: ${ctx.from.first_name} - ${ctx.from.id}`);
+  await bot.api.setMyCommands([
+    {
+      command: "start",
+      description: "Start using the bot and get an introduction. ",
+    },
+    { command: "help", description: "Show list of available commands" },
+    {
+      command: "about",
+      description: "Get information about bot.",
+    },
+    {
+      command: "settings",
+      description: "Access and modify your bot settings.",
+    },
+    {
+      command: "subscribe",
+      description: "Subscribe for a premium features.",
+    },
+    {
+      command: "files",
+      description: "Access and manage documents within the bot.",
+    },
+    {
+      command: "leave",
+      description: "To leave chat",
+    },
+  ]);
+  await ctx.reply(ctx.t("start"), { reply_markup: startMenu });
+  logger.info(`New user: ${ctx.from.username} - ${ctx.from.id}`);
+});
+
+bot.command("help", async (ctx) => {
+  await ctx.reply(ctx.t("help"), { parse_mode: "HTML" });
+});
+
+bot.command("about", async (ctx) => {
+  await ctx.reply(ctx.t("about"), { parse_mode: "HTML" });
 });
 
 bot.command("settings", async (ctx) => {
@@ -126,19 +158,18 @@ bot.command("leave", async (ctx) => {
       fileId: ctx.session.file.fileId,
     },
   });
-  await ctx.reply("Leaving.");
+  await ctx.reply(ctx.t("leave_mesasge"));
 });
 
 bot.callbackQuery("leave", async (ctx) => {
-  console.log("Leaving...");
   await ctx.conversation.exit("chat");
   await db.message.deleteMany({
     where: {
       fileId: ctx.session.file.fileId,
     },
   });
-  await ctx.reply("Chat session is closed");
-  await ctx.answerCallbackQuery("Left chat");
+  await ctx.reply(ctx.t("leave_mesasge"));
+  await ctx.answerCallbackQuery("leave_chat");
 });
 
 bot.use(createConversation(chat));
@@ -155,24 +186,24 @@ bot.use(documentComposer);
 
 run(bot);
 
-bot.catch((err) => {
+bot.catch(async (err) => {
   const ctx = err.ctx;
-  console.error(`Error while handling update ${ctx.update.update_id}:`);
+  logger.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;
   if (e instanceof GrammyError) {
-    console.error("Error in request:", e.description);
+    logger.error("Error in request:", e.description);
     if (ctx.chat) {
-      ctx.reply("Oops, something goes wrong, please try again");
+      await ctx.reply(ctx.t("error_message"));
     }
   } else if (e instanceof HttpError) {
-    console.error("Could not contact Telegram:", e);
+    logger.error("Could not contact Telegram:", e);
     if (ctx.chat) {
-      ctx.reply("Oops, something goes wrong, please try again");
+      await ctx.reply(ctx.t("error_message"));
     }
   } else {
-    console.error("Unknown error:", e);
+    logger.error("Unknown error:", e);
     if (ctx.chat) {
-      ctx.reply("Oops, something goes wrong, please try again");
+      await ctx.reply(ctx.t("error_message"));
     }
   }
 });

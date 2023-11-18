@@ -16,7 +16,6 @@ export const handleInvoice = async (
 
   const prices = await getPrices(period);
 
-  console.log(ctx.t("payment_description").toString());
   try {
     await ctx.replyWithInvoice(
       ctx.t(period),

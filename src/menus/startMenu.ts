@@ -1,9 +1,9 @@
 import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 
-export const languageMenu = new Menu<BotContext>("language");
+export const startMenu = new Menu<BotContext>("start");
 
-languageMenu.dynamic(async (ctx, range) => {
+startMenu.dynamic(async (_, range) => {
   range
     .text("🇷🇺 Русский", async (ctx) => {
       ctx.session.__language_code = "ru";
@@ -16,10 +16,6 @@ languageMenu.dynamic(async (ctx, range) => {
       await ctx.i18n.renegotiateLocale();
       await ctx.reply(ctx.t("language_default"));
       await ctx.answerCallbackQuery(ctx.t("language_default"));
-    })
-    .row()
-    .back(ctx.t("back"), async (ctx) => {
-      await ctx.editMessageText(ctx.t("settings_menu_text"));
     })
     .row();
 });

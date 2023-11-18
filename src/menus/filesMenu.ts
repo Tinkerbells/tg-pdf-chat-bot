@@ -27,7 +27,9 @@ fileMenu.dynamic(async (ctx, range) => {
       .text(ctx.t("summarize_button"), async (ctx) => {
         const msg = await ctx.reply(ctx.t("chat_loader"));
         const text = await openai.summarizeDoc(ctx.session.file.fileId);
-        await msg.editText(ctx.t("chat_assistant") + " " + text);
+        await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
+          parse_mode: "HTML",
+        });
       })
       .row();
   }

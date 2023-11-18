@@ -9,6 +9,5 @@ export const INIT_SESSION: SessionType = {
 };
 
 export const PROVIDERS = [
-  { name: "sberbank", token: env.SBER_PROVIDER_TOKEN },
   { name: "yookassa", token: env.YOOKASSA_PROVIDER_TOKEN },
 ];
