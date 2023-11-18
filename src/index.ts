@@ -17,6 +17,7 @@ import {
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
 import {
+  disableAdviceMenu,
   filesMenu,
   interactMenu,
   leaveMenu,
@@ -104,6 +105,7 @@ bot.use(settingsMenu);
 bot.use(providersMenu);
 bot.use(leaveMenu);
 bot.use(startMenu);
+bot.use(disableAdviceMenu);
 
 bot.command("start", async (ctx) => {
   await bot.api.setMyCommands([

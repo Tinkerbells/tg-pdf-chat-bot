@@ -3,6 +3,7 @@ start = Welcome {$first_name}, this is a bot for communicating with PDF document
        • Write /help to display all available commands.
        • Write /about to display information about this bot.
 
+       ⚠️ Bot still under development
        Please choose default language:
 
 back = ⬅️ Go back
@@ -50,7 +51,7 @@ about =
         Upgrade your PDF interaction on Telegram with our chat bot!
 
 
-
+advice = Improve your experience! When communicating with PDFs in our bot, provide relevant keywords found in the text. 📚 This enhances accuracy, making interactions smoother. Your input matters for better results! 💡
 
 # Payment description
 payment_description = For larger projects with higher needs.
@@ -133,7 +134,8 @@ chat_button = 💬 Chat
 
 save_button = 💾 Save
 
-leave_mesasge = Leave chat
+advice_button = Hide this message
 
+leave_mesasge = You have left the chat
 
 error_message = Oops! It seems like something went wrong.

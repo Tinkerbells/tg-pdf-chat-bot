@@ -9,22 +9,22 @@ import { PdfHandler } from "../pdf";
 
 export const documentComposer = new Composer<BotContext>();
 
-const allowUser = "641130142";
+// const allowUser = "641130142";
 
 documentComposer.on([":document"], async (ctx) => {
-  const session = await db.session.findFirst({
-    where: {
-      id: ctx.from?.id!.toString(),
-    },
-  });
+  // const session = await db.session.findFirst({
+  //   where: {
+  //     id: ctx.from?.id!.toString(),
+  //   },
+  // });
 
   // TODO remove this after testing
-  if (session.id !== allowUser) {
-    await ctx.reply(
-      "You are not allow to use this bot, still in development sorry!",
-    );
-    return;
-  }
+  // if (session.id !== allowUser) {
+  //   await ctx.reply(
+  //     "You are not allow to use this bot, still in development sorry!",
+  //   );
+  //   return;
+  // }
   const subscription = new Subscription(ctx.from.id.toString());
 
   const isSubscribed = await subscription.isSubscribed();

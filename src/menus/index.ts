@@ -6,3 +6,4 @@ export * from "./settingsMenu";
 export * from "./providersMenu";
 export * from "./leaveMenu";
 export * from "./startMenu";
+export * from "./disableAdviceMenu";

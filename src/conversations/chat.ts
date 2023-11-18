@@ -1,5 +1,10 @@
 import { Conversation } from "@grammyjs/conversations";
-import { createAssistantPrompt, createTmpPath, unlinkFile } from "../helpers";
+import {
+  createAssistantPrompt,
+  createTmpPath,
+  getRandomAdvice,
+  unlinkFile,
+} from "../helpers";
 import { db } from "../db";
 import type { BotContext } from "..";
 import { OpenAIAdapter } from "../openai";
@@ -7,7 +12,7 @@ import type { MessageType } from "../types/openai";
 import { OggConvertor } from "../oggConvertor";
 import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
-import { leaveMenu } from "../menus";
+import { disableAdviceMenu, leaveMenu } from "../menus";
 
 type ChatPdfConversation = Conversation<BotContext>;
 
@@ -15,6 +20,12 @@ export const chat = async (
   conversation: ChatPdfConversation,
   ctx: BotContext,
 ) => {
+  if (conversation.session.showAdvice) {
+    await ctx.reply(ctx.t("advice"), {
+      reply_markup: disableAdviceMenu,
+      parse_mode: "HTML",
+    });
+  }
   const openai = new OpenAIAdapter();
   while (true) {
     ctx = await conversation.waitFor("message");
