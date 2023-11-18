@@ -39,7 +39,7 @@ about =
 
         <b>Premium Features:</b>
         • Voice Communication
-        • Document Summarization output on English only
+        • Document Summarization, output on English only ⚠️
         • Extended File Storage: 25 files/month (max 50 pages)
         • Higher quality and faster responses
         • Priority support
