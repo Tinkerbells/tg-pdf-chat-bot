@@ -62,6 +62,7 @@ export class OpenAIAdapter {
     });
 
     const model = new AI({
+      modelName: "gpt-3.5-turbo",
       temperature: 0,
       openAIApiKey: env.OPENAI_API_KEY,
     });
@@ -69,6 +70,8 @@ export class OpenAIAdapter {
     const chain = loadSummarizationChain(model, {
       type: "map_reduce",
     });
+
+    // TODO make complite swap to gpt-3.5 model
     try {
       const res = await chain.call({
         input_documents: docs,
@@ -77,7 +80,7 @@ export class OpenAIAdapter {
       // TODO FIX THIS
       // const language = await detectLanguage(textPart);
       // const text = await getTranslation(res.text, language);
-      return textPart;
+      return res.text;
     } catch (error) {
       logger.error(`Error while summarizing: ${error}`);
       throw error;

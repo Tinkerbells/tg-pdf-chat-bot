@@ -26,9 +26,7 @@ paymentComposer.on(":successful_payment", async (ctx) => {
   ctx.session.filesUploadTimeout = null;
   ctx.session.provider = null;
   await ctx.reply(
-    ctx.t(
-      "subscription_success" +
-        ctx.t(payload.period).split(" ").slice(0, 2).join(" "), // remove last subscription word
-    ),
+    ctx.t("subscription_success") +
+      ctx.t(payload.period).split(" ").slice(0, 2).join(" "),
   );
 });

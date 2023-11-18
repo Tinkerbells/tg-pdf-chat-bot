@@ -10,7 +10,7 @@ fileMenu.dynamic(async (ctx, range) => {
   const subscription = new Subscription(ctx.from.id.toString());
   const isSubscribe = await subscription.isSubscribed();
 
-  range.text(ctx.t("save_button"), async (ctx) => {
+  range.text(ctx.t("chat_button"), async (ctx) => {
     const id = ctx.session.file.fileId;
     const files = ctx.session.files;
     const { name } = files.find((f) => f.fileId === id);
@@ -31,7 +31,6 @@ fileMenu.dynamic(async (ctx, range) => {
       })
       .row();
   }
-
   // range
   //   .text("Delete", async (ctx) => {
   //     const id = ctx.session.file.fileId;
@@ -55,7 +54,12 @@ fileMenu.dynamic(async (ctx, range) => {
   //     }
   //   })
   //   .row()
-  range.back(ctx.t("back"));
+  range.back(ctx.t("back"), async (ctx) => {
+    await ctx.editMessageText(
+      ctx.t("files_menu_text", { count: ctx.session.files.length }),
+      { parse_mode: "HTML" },
+    );
+  });
 });
 
 export const filesMenu = new Menu<BotContext>("files");
@@ -66,6 +70,10 @@ filesMenu.dynamic((ctx, range) => {
     range
       .submenu("📄" + " " + file.name, "file", async (ctx) => {
         ctx.session.file.fileId = file.fileId;
+        await ctx.editMessageText(
+          ctx.t("files_file_option", { file: file.name }),
+          { parse_mode: "HTML" },
+        );
       })
       .row(),
   );
