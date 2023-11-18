@@ -1,7 +1,56 @@
 start = Welcome {$first_name}, this is a bot for communicating with PDF documents.
-       Write /help to display all available commands.
+
+       • Write /help to display all available commands.
+       • Write /about to display information about this bot.
+
+       Please choose default language:
 
 back = ⬅️ Go back
+
+
+help = 🤖 <b>PDF Telegram Bot Help</b>
+
+        Welcome to the PDF Telegram Bot! Here are the available commands:
+
+        <b>/start</b> - Start using the bot and get an introduction.
+
+        <b>/settings</b> - Access and modify your bot settings.
+
+        <b>/subscribe</b> - Subscribe for additional options.
+
+        <b>/files</b> - Access and manage documents within the bot.
+
+        <b>/about</b> - Get information about bot.
+
+        <b>/leave</b> - To leave chat.
+
+        <b>/help</b> - Display this help message.
+
+
+about =
+        Your all-in-one Telegram bot for seamless PDF communication.
+
+        <b>Free Tier:</b>
+        • Upload 4 files/month (up to 10 pages each).
+        • Real-time chat with PDFs.
+
+        For advanced use, unlock premium features, use /subscription 
+
+        <b>Premium Features:</b>
+        • Voice Communication
+        • Document Summarization output on English only
+        • Extended File Storage: 25 files/month (max 50 pages)
+        • Higher quality and faster responses
+        • Priority support
+
+        <b>File Lifecycle:</b> 30 days. Files are securely destroyed for privacy.
+
+        For support, contact us at support@email.com
+
+        Upgrade your PDF interaction on Telegram with our chat bot!
+
+
+
 
 # Payment description
 payment_description = For larger projects with higher needs.
@@ -13,9 +62,9 @@ payment_description = For larger projects with higher needs.
                       • Priority support
                       
 # Payment titles
-ONE_MONTH = 1 month subscription
-THREE_MONTH = 3 months subscription
-ONE_YEAR = 12 months subscription
+ONE_MONTH = 1 month subscription 
+THREE_MONTH = 3 months subscription (10% discount)
+ONE_YEAR = 12 months subscription (25% discount)
 
 
 # Settings manage subscription 
@@ -53,11 +102,12 @@ files_file_option = File - <b>{$file}</b>
 # CHAT
 chat_enter = 💬 Entering chat with file <b>{$fileName}</b>:
 chat_voice_large_warning = Sorry, your voice message is too large to process.
-chat_command_warning = Your question should not start with /!
+chat_command_warning = Your question should not start with <b>"/"</b>!
                        Please try again
 
+chat_leave = ❌ Leave chat
 chat_loader = 💡 Processing request... 
-chat_assistant = 🤖 Assistant answer:
+chat_assistant = 🤖 <b>Assistant answer:</b>
 
 
 # MENUS
@@ -83,3 +133,7 @@ chat_button = 💬 Chat
 
 save_button = 💾 Save
 
+leave_mesasge = Leave chat
+
+
+error_message = Oops! It seems like something went wrong.
