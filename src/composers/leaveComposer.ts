@@ -22,5 +22,5 @@ leaveComposer.callbackQuery("leave", async (ctx) => {
     },
   });
   await ctx.reply(ctx.t("leave_mesasge"));
-  await ctx.answerCallbackQuery("leave_chat");
+  await ctx.answerCallbackQuery(ctx.t("leave_mesasge"));
 });

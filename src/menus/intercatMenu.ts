@@ -3,12 +3,12 @@ import { BotContext } from "..";
 import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
 import { OpenAIAdapter } from "../openai";
-
+// TODO add limiter to chats conversations
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
   const sessionId = ctx.from.id.toString();
-  const openai = new OpenAIAdapter();
+  // const openai = new OpenAIAdapter();
   const pdf = new PdfHandler(ctx.session.downloadFilepath);
   const subscription = new Subscription(sessionId);
   const file = ctx.session.file;
@@ -45,13 +45,13 @@ interactMenu.dynamic(async (ctx, range) => {
   };
 
   range.text(ctx.t("chat_button"), async (ctx) => {
-    const filesValidation = await validateFiles();
-    if (!filesValidation) {
-      return;
-    }
     const pages = await pdf.parse();
     const pagesValidaton = await validatePages(pages.length);
     if (!pagesValidaton) {
+      return;
+    }
+    const filesValidation = await validateFiles();
+    if (!filesValidation) {
       return;
     }
     const id = await pdf.save(file, sessionId);
@@ -68,18 +68,21 @@ interactMenu.dynamic(async (ctx, range) => {
   } else {
     range
       .text(ctx.t("summarize_button"), async (ctx) => {
-        const filesValidation = await validateFiles();
-        if (!filesValidation) {
-          return;
-        }
         const pages = await pdf.parse();
         const pagesValidaton = await validatePages(pages.length);
         if (!pagesValidaton) {
           return;
         }
+        const filesValidation = await validateFiles();
+        if (!filesValidation) {
+          return;
+        }
         const id = await pdf.save(file, sessionId);
         await pdf.store(pages, id);
-        const text = await openai.summarizeDoc(id);
+        // const text = await openai.summarizeDoc(id);
+        const translateText =
+          ctx.session.__language_code === "ru" ? true : false;
+        const text = await pdf.summarize(id, translateText);
         const msg = await ctx.reply(ctx.t("chat_loader"));
         await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
           parse_mode: "HTML",
@@ -90,14 +93,13 @@ interactMenu.dynamic(async (ctx, range) => {
 
   range
     .text(ctx.t("save_button"), async (ctx) => {
-      const filesValidation = await validateFiles();
-      console.log(filesValidation);
-      if (!filesValidation) {
-        return;
-      }
       const pages = await pdf.parse();
       const pagesValidaton = await validatePages(pages.length);
       if (!pagesValidaton) {
+        return;
+      }
+      const filesValidation = await validateFiles();
+      if (!filesValidation) {
         return;
       }
       const id = await pdf.save(file, sessionId);

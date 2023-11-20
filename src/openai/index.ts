@@ -37,6 +37,28 @@ export class OpenAIAdapter {
     }
   }
 
+  async translate(message: string, text: string) {
+    const content = `Detect language to this message ${message} and translate text to it
+
+START TEXT BLOCK
+${text}
+END TEXT BLOCK
+
+Answer:`;
+    const messages = [{ role: "user", content: content }] as MessageType[];
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        temperature: 0,
+        messages,
+      });
+      return response.choices[0].message.content;
+    } catch (error) {
+      logger.error(`Error while getting translation: ${error}`);
+      throw error;
+    }
+  }
+
   async chat(messages: MessageType[]) {
     try {
       const response = await this.openai.chat.completions.create({
@@ -83,7 +105,6 @@ BULLET POINT SUMMARY:`;
       combinePrompt: prompt,
     });
 
-    // TODO make complite swap to gpt-3.5 model
     try {
       const res = await chain.call({
         input_documents: docs,

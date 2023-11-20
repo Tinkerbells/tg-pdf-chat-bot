@@ -2,16 +2,18 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { Subscription } from "../subscription";
 import { OpenAIAdapter } from "../openai";
+import { PdfHandler } from "../pdf";
 
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
-  const openai = new OpenAIAdapter();
+  // const openai = new OpenAIAdapter();
+  const pdf = new PdfHandler();
   const subscription = new Subscription(ctx.from.id.toString());
   const isSubscribe = await subscription.isSubscribed();
 
+  const id = ctx.session.file.fileId;
   range.text(ctx.t("chat_button"), async (ctx) => {
-    const id = ctx.session.file.fileId;
     const files = ctx.session.files;
     const { name } = files.find((f) => f.fileId === id);
     ctx.reply(ctx.t("chat_enter", { fileName: name }), {
@@ -26,7 +28,9 @@ fileMenu.dynamic(async (ctx, range) => {
     range
       .text(ctx.t("summarize_button"), async (ctx) => {
         const msg = await ctx.reply(ctx.t("chat_loader"));
-        const text = await openai.summarizeDoc(ctx.session.file.fileId);
+        const translateText =
+          ctx.session.__language_code === "ru" ? true : false;
+        const text = await pdf.summarize(id, translateText);
         await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
           parse_mode: "HTML",
         });
@@ -81,3 +85,5 @@ filesMenu.dynamic((ctx, range) => {
   );
   return range;
 });
+
+filesMenu.register(fileMenu);

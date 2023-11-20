@@ -15,3 +15,5 @@ providersMenu.dynamic((_, range) => {
       .row();
   });
 });
+
+providersMenu.register(subscriptionMenu);

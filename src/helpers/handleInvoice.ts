@@ -18,8 +18,8 @@ export const handleInvoice = async (
 
   try {
     await ctx.replyWithInvoice(
-      ctx.t(period),
-      ctx.t("payment_description").toString(),
+      ctx.t(period).split(" ").slice(0, 3).join(" "),
+      ctx.t("payment_description"),
       JSON.stringify(payload),
       provider.token,
       "RUB",

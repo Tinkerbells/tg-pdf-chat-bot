@@ -12,5 +12,3 @@ export const INIT_SESSION: SessionType = {
 export const PROVIDERS = [
   { name: "yookassa", token: env.YOOKASSA_PROVIDER_TOKEN },
 ];
-
-export const randomRange = [0, 500];

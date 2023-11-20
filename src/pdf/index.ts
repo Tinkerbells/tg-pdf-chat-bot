@@ -7,12 +7,41 @@ import { PrismaVectorStore } from "langchain/vectorstores/prisma";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { Document, Prisma } from "@prisma/client";
+// import { Ollama } from "langchain/llms/ollama";
+import translate from "translate";
 import { db } from "../db";
+import {
+  RetrievalQAChain,
+  loadQAStuffChain,
+  loadSummarizationChain,
+} from "langchain/chains";
+import { Document as langDocument } from "langchain/document";
+import { PromptTemplate } from "langchain/prompts";
+import { env } from "../env";
+import { Embeddings } from "langchain/embeddings/base";
+import { OpenAI } from "langchain/llms/openai";
 
 export class PdfHandler {
   private filePath: string;
+  // private model: Ollama;
+  private embeddings: Embeddings;
+  private model: OpenAI;
   constructor(filePath?: string) {
+    const embeddings = new OpenAIEmbeddings({
+      openAIApiKey: env.OPENAI_API_KEY,
+    });
+    this.embeddings = embeddings;
     this.filePath = filePath;
+    const model = new OpenAI({
+      modelName: "gpt-3.5-turbo",
+      temperature: 0,
+      openAIApiKey: env.OPENAI_API_KEY,
+    });
+    // const model = new Ollama({
+    //   baseUrl: "http://localhost:11434",
+    //   model: "mistral",
+    // });
+    this.model = model;
   }
   check() {
     return this.filePath.split(".").pop().toLowerCase() === "pdf";
@@ -44,10 +73,8 @@ export class PdfHandler {
   }
 
   async store(pages: PDFPage[], fileId: string) {
-    const embeddings = this.getEmbeddings();
-
     const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
-      embeddings,
+      this.embeddings,
       {
         prisma: Prisma,
         tableName: "Document",
@@ -81,10 +108,8 @@ export class PdfHandler {
 
   async matches(message: string, fileId: string) {
     try {
-      const embeddings = this.getEmbeddings();
-
       const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
-        embeddings,
+        this.embeddings,
         {
           prisma: Prisma,
           tableName: "Document",
@@ -108,23 +133,94 @@ export class PdfHandler {
     }
   }
 
-  private getEmbeddings() {
+  async chat(message: string, fileId: string, translateText: boolean) {
+    const vectorStore = PrismaVectorStore.withModel<Document>(db).create(
+      this.embeddings,
+      {
+        prisma: Prisma,
+        tableName: "Document",
+        vectorColumnName: "vector",
+        columns: {
+          content: PrismaVectorStore.ContentColumn,
+          id: PrismaVectorStore.IdColumn,
+        },
+        filter: {
+          fileId: {
+            equals: fileId,
+          },
+        },
+      },
+    );
+
+    const chain = new RetrievalQAChain({
+      combineDocumentsChain: loadQAStuffChain(this.model),
+      retriever: vectorStore.asRetriever(),
+      inputKey: "question",
+    });
+
     try {
-      const embeddings = new OpenAIEmbeddings({
-        openAIApiKey: process.env.OPENAI_API_KEY,
+      const response = await chain.call({
+        question: message,
       });
-      return embeddings;
+
+      let text = response.text;
+
+      if (translateText) {
+        text = await translate(text, "ru");
+      }
+      return text;
     } catch (error) {
-      logger.error(`Error calling openai embeddings: ${error}`);
-      throw error;
+      logger.error(`Error while chatting with document: ${error}`);
     }
   }
 
+  async summarize(fileId: string, translateText: boolean) {
+    const fildDocs = await db.document.findMany({
+      where: {
+        fileId: fileId,
+      },
+    });
+
+    const docs = fildDocs.map((doc) => {
+      return new langDocument({ pageContent: doc.content });
+    });
+
+    const template = `Write a concise summary of the following:
+                      Return your response in bullet points which covers the key points of the text
+
+"{text}"
+
+
+BULLET POINT SUMMARY:`;
+
+    const prompt = PromptTemplate.fromTemplate(template);
+
+    const chain = loadSummarizationChain(this.model, {
+      type: "stuff",
+      prompt: prompt,
+      verbose: true,
+    });
+
+    try {
+      const response = await chain.call({
+        input_documents: docs,
+      });
+      let text = response.text;
+
+      if (translateText) {
+        text = await translate(text, "ru");
+      }
+      return text;
+    } catch (error) {
+      logger.error(`Error while summarizing: ${error}`);
+      throw error;
+    }
+  }
   private async prepareDocument(page: PDFPage) {
     let { pageContent } = page;
     pageContent = pageContent.replace(/\n/g, "");
     // split the docs
-    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 256 });
+    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
     try {
       const docs = await splitter.createDocuments([pageContent]);
       return docs;

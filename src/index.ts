@@ -20,9 +20,7 @@ import {
   disableAdviceMenu,
   filesMenu,
   interactMenu,
-  leaveMenu,
   providersMenu,
-  rootMenu,
   settingsMenu,
   startMenu,
 } from "./menus";
@@ -55,7 +53,7 @@ export type BotContext = HydrateFlavor<
 type BotApi = FileApiFlavor<Api>;
 
 const i18n = new I18n<BotContext>({
-  defaultLocale: "en",
+  defaultLocale: "ru",
   useSession: true,
   directory: "locales",
   globalTranslationContext(ctx) {
@@ -109,15 +107,16 @@ bot.use(i18n);
 
 bot.use(conversations());
 
-// menuts
-bot.use(rootMenu);
+bot.use(settingsMenu);
+bot.use(providersMenu);
+bot.use(startMenu);
+bot.use(disableAdviceMenu);
 
-// Composers and conversations
+// composers and conversations
+bot.use(leaveComposer);
+bot.use(createConversation(chat));
 bot.use(mainComposer);
 bot.use(settingsComposer);
-bot.use(leaveComposer);
-
-bot.use(createConversation(chat));
 
 bot.use(paymentComposer);
 
