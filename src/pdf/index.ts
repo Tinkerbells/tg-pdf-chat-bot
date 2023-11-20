@@ -7,7 +7,7 @@ import { PrismaVectorStore } from "langchain/vectorstores/prisma";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { Document, Prisma } from "@prisma/client";
-// import { Ollama } from "langchain/llms/ollama";
+import { Ollama } from "langchain/llms/ollama";
 import translate from "translate";
 import { db } from "../db";
 import {
@@ -23,24 +23,24 @@ import { OpenAI } from "langchain/llms/openai";
 
 export class PdfHandler {
   private filePath: string;
-  // private model: Ollama;
+  private model: Ollama;
   private embeddings: Embeddings;
-  private model: OpenAI;
+  // private model: OpenAI;
   constructor(filePath?: string) {
     const embeddings = new OpenAIEmbeddings({
       openAIApiKey: env.OPENAI_API_KEY,
     });
     this.embeddings = embeddings;
     this.filePath = filePath;
-    const model = new OpenAI({
-      modelName: "gpt-3.5-turbo",
-      temperature: 0,
-      openAIApiKey: env.OPENAI_API_KEY,
-    });
-    // const model = new Ollama({
-    //   baseUrl: "http://localhost:11434",
-    //   model: "mistral",
+    // const model = new OpenAI({
+    //   modelName: "gpt-3.5-turbo",
+    //   temperature: 0,
+    //   openAIApiKey: env.OPENAI_API_KEY,
     // });
+    const model = new Ollama({
+      baseUrl: "http://localhost:11434",
+      model: "dolphin2.2-mistral",
+    });
     this.model = model;
   }
   check() {
@@ -220,7 +220,7 @@ BULLET POINT SUMMARY:`;
     let { pageContent } = page;
     pageContent = pageContent.replace(/\n/g, "");
     // split the docs
-    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000 });
+    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 256 });
     try {
       const docs = await splitter.createDocuments([pageContent]);
       return docs;

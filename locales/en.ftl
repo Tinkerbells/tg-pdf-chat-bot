@@ -148,3 +148,5 @@ leave_mesasge = You have left the chat
 error_message = Oops! It seems like something went wrong.
 
 tooold_message = Apologies for inconvenience! Your recent action in the app couldn't be processed due to its age. Please refresh and try again. Thank you for your understanding.
+
+refain_message = ⚠️ Please refrain from performing repetitive actions or spamming the bot! 
