@@ -1,9 +1,12 @@
 start = Welcome {$first_name}, this is a bot for communicating with PDF documents.
+        To start using this bot, simply submit a file
 
        • Write /help to display all available commands.
        • Write /about to display information about this bot.
 
        ⚠️ Bot still under development
+
+
        Please choose default language:
 
 back = ⬅️ Go back
@@ -39,7 +42,7 @@ about =
 
         <b>Premium Features:</b>
         • Voice Communication
-        • Document Summarization, output on English only ⚠️
+        • Document Summarization
         • Extended File Storage: 25 files/month (max 50 pages)
         • Higher quality and faster responses
         • Priority support
@@ -64,8 +67,8 @@ payment_description = For larger projects with higher needs.
                       
 # Payment titles
 ONE_MONTH = 1 month subscription 
-THREE_MONTH = 3 months subscription (10% discount)
-ONE_YEAR = 12 months subscription (25% discount)
+THREE_MONTH = 3 months subscription 🌟 (10% discount)
+ONE_YEAR = 12 months subscription 🌟 (25% discount)
 
 
 # Settings manage subscription 
@@ -103,8 +106,12 @@ files_file_option = File - <b>{$file}</b>
 # CHAT
 chat_enter = 💬 Entering chat with file <b>{$fileName}</b>:
 chat_voice_large_warning = Sorry, your voice message is too large to process.
-chat_command_warning = Your question should not start with <b>"/"</b>!
+chat_command_warning = ⚠️ Your question should not start with <b>"/"</b>
                        Please try again
+
+chat_message_type_warning = ⚠️ Please use text messages for optimal communication.
+                            Voice messages are available if subscribed /subscribe.
+                            Avoid sending images or files. 
 
 chat_leave = ❌ Leave chat
 chat_loader = 💡 Processing request... 
@@ -139,3 +146,5 @@ advice_button = Hide this message
 leave_mesasge = You have left the chat
 
 error_message = Oops! It seems like something went wrong.
+
+tooold_message = Apologies for inconvenience! Your recent action in the app couldn't be processed due to its age. Please refresh and try again. Thank you for your understanding.
