@@ -96,7 +96,7 @@ bot.use(
     storageClient: redis,
 
     onLimitExceeded: async (ctx) => {
-      await ctx.reply(ctx.t("refain_messasge"));
+      await ctx.reply(ctx.t("refain_message"));
     },
 
     keyGenerator: getSessionKey,
