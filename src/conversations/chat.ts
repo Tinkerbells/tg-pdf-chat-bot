@@ -3,9 +3,8 @@ import { createTmpPath, unlinkFile } from "../helpers";
 import type { BotContext } from "..";
 import { OpenAIAdapter } from "../openai";
 import { OggConvertor } from "../oggConvertor";
-import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
-import { disableAdviceMenu, leaveMenu } from "../menus";
+import { disableAdviceMenu } from "../menus";
 import { InlineKeyboard } from "grammy";
 
 type ChatPdfConversation = Conversation<BotContext>;
@@ -17,13 +16,14 @@ const pdf = new PdfHandler();
 async function handleVoiceMessage(
   conversation: ChatPdfConversation,
   ctx: BotContext,
+  keyboard: InlineKeyboard,
 ) {
   const audio = await ctx.getFile();
 
   // check if audio file is less than 25mb for openai api
   if (audio.file_size > 24 * 1024 * 1024) {
     await ctx.reply(ctx.t("chat_voice_large_warning"), {
-      reply_markup: leaveMenu,
+      reply_markup: keyboard,
     });
     return;
   }
@@ -63,7 +63,7 @@ export const chat = async (
   while (true) {
     ctx = await conversation.waitFor("message");
     if (ctx.message.voice) {
-      message = await handleVoiceMessage(conversation, ctx);
+      message = await handleVoiceMessage(conversation, ctx, keyboard);
     } else if (ctx.message.text) {
       if (ctx.message.text.charAt(0) === "/") {
         await ctx.reply(ctx.t("chat_command_warning"), {

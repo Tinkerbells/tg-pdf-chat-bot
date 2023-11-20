@@ -79,11 +79,10 @@ interactMenu.dynamic(async (ctx, range) => {
         }
         const id = await pdf.save(file, sessionId);
         await pdf.store(pages, id);
-        // const text = await openai.summarizeDoc(id);
+        const msg = await ctx.reply(ctx.t("chat_loader"));
         const translateText =
           ctx.session.__language_code === "ru" ? true : false;
         const text = await pdf.summarize(id, translateText);
-        const msg = await ctx.reply(ctx.t("chat_loader"));
         await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
           parse_mode: "HTML",
         });

@@ -96,7 +96,7 @@ bot.use(
     storageClient: redis,
 
     onLimitExceeded: async (ctx) => {
-      await ctx.reply("Please refrain from sending too many requests!");
+      await ctx.reply(ctx.t("refain_messasge"));
     },
 
     keyGenerator: getSessionKey,
