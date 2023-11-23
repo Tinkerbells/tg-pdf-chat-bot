@@ -18,18 +18,26 @@ import {
 import { Document as langDocument } from "langchain/document";
 import { PromptTemplate } from "langchain/prompts";
 import { env } from "../env";
-import { Embeddings } from "langchain/embeddings/base";
+import { HuggingFaceInferenceEmbeddings } from "langchain/embeddings/hf";
 import { OpenAI } from "langchain/llms/openai";
+import { BotContext } from "..";
+import { sendLogs } from "../utils";
 
 export class PdfHandler {
   private filePath: string;
   private model: Ollama;
-  private embeddings: Embeddings;
+  private embeddings: HuggingFaceInferenceEmbeddings;
+  private ctx: BotContext;
   // private model: OpenAI;
-  constructor(filePath?: string) {
-    const embeddings = new OpenAIEmbeddings({
-      openAIApiKey: env.OPENAI_API_KEY,
-    });
+  constructor(ctx: BotContext, filePath?: string) {
+    const modelName = "orca2:13b";
+    const baseUrl = "http://localhost:11434";
+    this.ctx = ctx;
+    // const embeddings = new OpenAIEmbeddings({
+    //   openAIApiKey: env.OPENAI_API_KEY,
+    // });
+    const embeddings = new HuggingFaceInferenceEmbeddings();
+
     this.embeddings = embeddings;
     this.filePath = filePath;
     // const model = new OpenAI({
@@ -38,8 +46,8 @@ export class PdfHandler {
     //   openAIApiKey: env.OPENAI_API_KEY,
     // });
     const model = new Ollama({
-      baseUrl: "http://localhost:11434",
-      model: "dolphin2.2-mistral",
+      baseUrl: baseUrl,
+      model: modelName,
     });
     this.model = model;
   }
@@ -53,6 +61,7 @@ export class PdfHandler {
       await unlinkFile(this.filePath);
       return pages;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while parsing document ${this.filePath}:`, error);
       throw error;
     }
@@ -68,6 +77,7 @@ export class PdfHandler {
       });
       return id;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while saving file: ${error}`);
     }
   }
@@ -100,7 +110,9 @@ export class PdfHandler {
           ),
         ),
       );
+      logger.info(`Vectors stored for file: ${fileId}`);
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while trying to store doc: ${error}`);
       throw error;
     }
@@ -128,6 +140,7 @@ export class PdfHandler {
       const results = await vectorStore.similaritySearch(message, 4); // search for 4 docs
       return results;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while gettings matches: ${error}`);
       throw error;
     }
@@ -170,7 +183,9 @@ export class PdfHandler {
       }
       return text;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while chatting with document: ${error}`);
+      throw error;
     }
   }
 
@@ -212,6 +227,7 @@ BULLET POINT SUMMARY:`;
       }
       return text;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while summarizing: ${error}`);
       throw error;
     }

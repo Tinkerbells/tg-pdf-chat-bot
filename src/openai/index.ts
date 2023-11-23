@@ -8,20 +8,25 @@ import { db } from "../db";
 import { loadSummarizationChain } from "langchain/chains";
 import { logger } from "../logger";
 import { PromptTemplate } from "langchain/prompts";
+import { ChatCompletionMessageParam } from "openai/resources";
+import { sendLogs } from "../utils";
+import { BotContext } from "..";
 
 export class OpenAIAdapter {
   private openai: OpenAI;
+  private ctx: BotContext;
 
   roles = {
     ASSISTANT: "assistant",
     USER: "user",
   };
 
-  constructor() {
+  constructor(ctx: BotContext) {
     const openai = new OpenAI({
       apiKey: env.OPENAI_API_KEY,
     });
     this.openai = openai;
+    this.ctx = ctx;
   }
 
   async transcription(filepath: string) {
@@ -32,6 +37,7 @@ export class OpenAIAdapter {
       });
       return response.text;
     } catch (error) {
+      await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while transcription: ${error}`);
       throw error;
     }
@@ -45,7 +51,9 @@ ${text}
 END TEXT BLOCK
 
 Answer:`;
-    const messages = [{ role: "user", content: content }] as MessageType[];
+    const messages = [
+      { role: "user", content: content },
+    ] as ChatCompletionMessageParam[];
     try {
       const response = await this.openai.chat.completions.create({
         model: "gpt-3.5-turbo",
@@ -59,7 +67,43 @@ Answer:`;
     }
   }
 
-  async chat(messages: MessageType[]) {
+  async assistant(question: string, filePath: string) {
+    // const file = await this.openai.files.create({
+    //   file: fs.createReadStream(filePath),
+    //   purpose: "assistants",
+    // });
+    // console.log("File:", file);
+    const thread = await this.openai.beta.threads.create();
+    console.log(thread);
+    const message = await this.openai.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: question,
+      file_ids: ["file-GPx7rVqXc8Ao79kbqm1kFXZ1"],
+    });
+    const run = await this.openai.beta.threads.runs.create(thread.id, {
+      assistant_id: "asst_tLwgVLykzssmd1iyhFr0qbAf",
+    });
+    while (true) {
+      const runRetrieve = await this.openai.beta.threads.runs.retrieve(
+        thread.id,
+        run.id,
+      );
+      if (runRetrieve.status === "completed") {
+        break;
+      }
+    }
+    const messages = await this.openai.beta.threads.messages.list(thread.id);
+    let result = [];
+    messages.data.forEach((message) => {
+      if (message.role === "assistant") {
+        result.push(message.content);
+      }
+      console.log("Message", message.role, message.content);
+    });
+    return result;
+  }
+
+  async chat(messages: ChatCompletionMessageParam[]) {
     try {
       const response = await this.openai.chat.completions.create({
         model: "gpt-3.5-turbo",

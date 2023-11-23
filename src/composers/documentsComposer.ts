@@ -34,7 +34,7 @@ documentComposer.on([":document"], async (ctx) => {
   const fileKey = document.file_id;
   const filePath = document.file_path;
   const url = document.getUrl();
-  const pdf = new PdfHandler(filePath);
+  const pdf = new PdfHandler(ctx, filePath);
   const isPdf = pdf.check();
   const dlPath = createTmpPath(fileKey);
 

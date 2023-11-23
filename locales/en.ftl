@@ -35,7 +35,7 @@ about =
         Your all-in-one Telegram bot for seamless PDF communication.
 
         <b>Free Tier:</b>
-        • Upload 4 files/month (up to 10 pages each).
+        • Upload 5 files/month (up to 20 pages each).
         • Real-time chat with PDFs.
 
         For advanced use, unlock premium features, use /subscription 
@@ -102,6 +102,8 @@ files_already_exist = File already exsist!
 files_pdf_only_warninig = The file must be in pdf format!
 files_saved = File saved <b>{$fileName}</b>
 files_file_option = File - <b>{$file}</b>
+files_next = ▶ Next 
+files_prev = ◀ Prev 
 
 # CHAT
 chat_enter = 💬 Entering chat with file <b>{$fileName}</b>:
@@ -115,6 +117,7 @@ chat_message_type_warning = ⚠️ Please use text messages for optimal communic
 
 chat_leave = ❌ Leave chat
 chat_loader = 💡 Processing request... 
+prepare_doc = ⏱️ Preparing the document...
 chat_assistant = 🤖 <b>Assistant answer:</b>
 
 
@@ -150,3 +153,4 @@ error_message = Oops! It seems like something went wrong.
 tooold_message = Apologies for inconvenience! Your recent action in the app couldn't be processed due to its age. Please refresh and try again. Thank you for your understanding.
 
 refain_message = ⚠️ Please refrain from performing repetitive actions or spamming the bot! 
+

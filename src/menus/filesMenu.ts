@@ -1,14 +1,16 @@
-import { Menu } from "@grammyjs/menu";
+import { Menu, MenuRange } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { Subscription } from "../subscription";
 import { OpenAIAdapter } from "../openai";
 import { PdfHandler } from "../pdf";
+import { File } from "@prisma/client";
+import { FileType } from "../prismaAdapter";
 
 const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
   // const openai = new OpenAIAdapter();
-  const pdf = new PdfHandler();
+  const pdf = new PdfHandler(ctx);
   const subscription = new Subscription(ctx.from.id.toString());
   const isSubscribe = await subscription.isSubscribed();
 
@@ -70,9 +72,24 @@ fileMenu.dynamic(async (ctx, range) => {
 
 export const filesMenu = new Menu<BotContext>("files");
 
+const limit = 13;
+
 filesMenu.dynamic((ctx, range) => {
-  const files = ctx.session.files;
-  files.forEach((file) =>
+  const current = ctx.session.currentFilesPage;
+  let files = ctx.session.files.concat(ctx.session.files);
+  const maxPages = Math.ceil(files.length / limit);
+  const length = files.length;
+  createFilesMenu(range, files, current);
+  getPagination(ctx, range, current, maxPages);
+  return range;
+});
+
+async function createFilesMenu(
+  range: MenuRange<BotContext>,
+  files: FileType[],
+  current: number,
+) {
+  files.slice(current * limit - limit, current * limit).forEach((file) => {
     range
       .submenu("📄" + " " + file.name, "file", async (ctx) => {
         ctx.session.file.fileId = file.fileId;
@@ -81,9 +98,30 @@ filesMenu.dynamic((ctx, range) => {
           { parse_mode: "HTML" },
         );
       })
-      .row(),
-  );
+      .row();
+  });
   return range;
-});
+}
+
+async function getPagination(
+  ctx: BotContext,
+  range: MenuRange<BotContext>,
+  current: number,
+  maxPages: number,
+) {
+  if (current === 1 && maxPages !== 1) {
+    range.text(ctx.t("files_next"), (ctx) => {
+      ctx.session.currentFilesPage++;
+      ctx.menu.update();
+    });
+  }
+  if (current === maxPages && maxPages !== 1) {
+    range.text(ctx.t("files_prev"), (ctx) => {
+      ctx.session.currentFilesPage--;
+      ctx.menu.update();
+    });
+  }
+  return range;
+}
 
 filesMenu.register(fileMenu);

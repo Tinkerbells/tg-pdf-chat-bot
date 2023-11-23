@@ -9,15 +9,12 @@ import { InlineKeyboard } from "grammy";
 
 type ChatPdfConversation = Conversation<BotContext>;
 
-const openai = new OpenAIAdapter();
-
-const pdf = new PdfHandler();
-
 async function handleVoiceMessage(
   conversation: ChatPdfConversation,
   ctx: BotContext,
   keyboard: InlineKeyboard,
 ) {
+  const openai = new OpenAIAdapter(ctx);
   const audio = await ctx.getFile();
 
   // check if audio file is less than 25mb for openai api
@@ -45,6 +42,7 @@ export const chat = async (
   conversation: ChatPdfConversation,
   ctx: BotContext,
 ) => {
+  const pdf = new PdfHandler(ctx);
   if (conversation.session.showAdvice) {
     await ctx.reply(ctx.t("advice"), {
       reply_markup: disableAdviceMenu,

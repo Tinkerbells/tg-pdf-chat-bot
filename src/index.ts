@@ -26,7 +26,7 @@ import {
 } from "./menus";
 import { env } from "./env";
 import { db, redis } from "./db";
-import { getSessionKey } from "./utils";
+import { getSessionKey, sendLogs } from "./utils";
 import { type SessionType } from "./types/session";
 import { PrismaAdapter } from "./prismaAdapter";
 import { limit } from "@grammyjs/ratelimiter";
@@ -117,7 +117,9 @@ bot.use(leaveComposer);
 bot.use(createConversation(chat));
 bot.use(mainComposer);
 bot.use(settingsComposer);
-
+bot.command("chat", (ctx) => {
+  console.log(ctx.chat.id);
+});
 bot.use(paymentComposer);
 
 bot.use(filesMenu);
@@ -136,16 +138,20 @@ bot.catch(async (err) => {
   const e = err.error;
   if (e instanceof GrammyError) {
     logger.error("Error in request:", e.description);
+    await ctx.api.sendMessage(env.CHAT_LOG_ID, e.description);
+    await sendLogs(ctx, e.description);
     if (ctx.chat) {
       await ctx.reply(ctx.t("error_message"));
     }
   } else if (e instanceof HttpError) {
     logger.error("Could not contact Telegram:", e);
+    await sendLogs(ctx, JSON.stringify(e));
     if (ctx.chat) {
       await ctx.reply(ctx.t("error_message"));
     }
   } else {
     logger.error("Unknown error:", e);
+    await sendLogs(ctx, JSON.stringify(e));
     if (ctx.chat) {
       await ctx.reply(ctx.t("error_message"));
     }

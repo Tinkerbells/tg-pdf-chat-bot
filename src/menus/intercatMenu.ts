@@ -2,14 +2,11 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
-import { OpenAIAdapter } from "../openai";
-// TODO add limiter to chats conversations
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
   const sessionId = ctx.from.id.toString();
-  // const openai = new OpenAIAdapter();
-  const pdf = new PdfHandler(ctx.session.downloadFilepath);
+  const pdf = new PdfHandler(ctx, ctx.session.downloadFilepath);
   const subscription = new Subscription(sessionId);
   const file = ctx.session.file;
   const isSubscribe = await subscription.isSubscribed();
@@ -29,7 +26,7 @@ interactMenu.dynamic(async (ctx, range) => {
   };
 
   const validateFiles = async () => {
-    if (filesCount + 1 > maxFiles) {
+    if (filesCount + 1 >= maxFiles) {
       if (isSubscribe) {
         await ctx.reply(ctx.t("subscription_files_limit_warning"));
       } else {
@@ -45,6 +42,7 @@ interactMenu.dynamic(async (ctx, range) => {
   };
 
   range.text(ctx.t("chat_button"), async (ctx) => {
+    const msg = await ctx.reply(ctx.t("prepare_doc"));
     const pages = await pdf.parse();
     const pagesValidaton = await validatePages(pages.length);
     if (!pagesValidaton) {
@@ -56,7 +54,7 @@ interactMenu.dynamic(async (ctx, range) => {
     }
     const id = await pdf.save(file, sessionId);
     await pdf.store(pages, id);
-    ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
+    await msg.editText(ctx.t("chat_enter", { fileName: file.name }), {
       parse_mode: "HTML",
     });
     ctx.session.file.fileId = id;
@@ -68,6 +66,7 @@ interactMenu.dynamic(async (ctx, range) => {
   } else {
     range
       .text(ctx.t("summarize_button"), async (ctx) => {
+        const msg = await ctx.reply(ctx.t("prepare_doc"));
         const pages = await pdf.parse();
         const pagesValidaton = await validatePages(pages.length);
         if (!pagesValidaton) {
@@ -79,7 +78,7 @@ interactMenu.dynamic(async (ctx, range) => {
         }
         const id = await pdf.save(file, sessionId);
         await pdf.store(pages, id);
-        const msg = await ctx.reply(ctx.t("chat_loader"));
+        await msg.editText(ctx.t("chat_loader"));
         const translateText =
           ctx.session.__language_code === "ru" ? true : false;
         const text = await pdf.summarize(id, translateText);
@@ -92,6 +91,7 @@ interactMenu.dynamic(async (ctx, range) => {
 
   range
     .text(ctx.t("save_button"), async (ctx) => {
+      const msg = await ctx.reply(ctx.t("prepare_doc"));
       const pages = await pdf.parse();
       const pagesValidaton = await validatePages(pages.length);
       if (!pagesValidaton) {
@@ -103,7 +103,7 @@ interactMenu.dynamic(async (ctx, range) => {
       }
       const id = await pdf.save(file, sessionId);
       await pdf.store(pages, id);
-      await ctx.reply(ctx.t("files_saved", { fileName: file.name }), {
+      await msg.editText(ctx.t("files_saved", { fileName: file.name }), {
         parse_mode: "HTML",
       });
       ctx.session.file.fileId = id;
