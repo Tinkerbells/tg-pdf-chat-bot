@@ -1,13 +1,32 @@
-start = Welcome {$first_name}, this is a bot for communicating with PDF documents.
-        To start using this bot, simply submit a file
+start = Welcome {$first_name}, this is your all-in-one Telegram bot for seamless PDF communication using AI.
+
+        <b>Free Tier:</b>
+        • Upload 5 files/month (up to 20 pages each).
+        • Real-time chat with PDFs.
+
+        For advanced use, unlock premium features, use /subscription 
+
+        <b>Premium Features:</b>
+        • Voice Communication
+        • Document Summarization
+        • Extended File Storage: 25 files/month (max 100 pages)
+        • Higher quality and faster responses
+        • Priority support
+
+        <b>File Lifecycle:</b> 30 days. Files are securely destroyed for privacy.
+        <b>Maximum file size:</b> 20MB
+
+        For support, contact us at pdf_chat_bot_support@proton.me
 
        • Write /help to display all available commands.
        • Write /about to display information about this bot.
 
        ⚠️ Bot still under development
 
+       To start using this bot, simply submit a file
 
        Please choose default language:
+
 
 back = ⬅️ Go back
 
@@ -32,7 +51,7 @@ help = 🤖 <b>PDF Telegram Bot Help</b>
 
 
 about =
-        Your all-in-one Telegram bot for seamless PDF communication.
+        Your all-in-one Telegram bot for seamless PDF communication using AI.
 
         <b>Free Tier:</b>
         • Upload 5 files/month (up to 20 pages each).
@@ -43,13 +62,14 @@ about =
         <b>Premium Features:</b>
         • Voice Communication
         • Document Summarization
-        • Extended File Storage: 25 files/month (max 50 pages)
+        • Extended File Storage: 25 files/month (max 100 pages)
         • Higher quality and faster responses
         • Priority support
 
         <b>File Lifecycle:</b> 30 days. Files are securely destroyed for privacy.
+        <b>Maximum file size:</b> 20MB
 
-        For support, contact us at support@email.com
+        For support, contact us at pdf_chat_bot_support@proton.me
 
         Upgrade your PDF interaction on Telegram with our chat bot!
 
@@ -59,7 +79,7 @@ advice = Improve your experience! When communicating with PDFs in our bot, provi
 # Payment description
 payment_description = For larger projects with higher needs.
                       • 25 PDFs/mo included
-                      • 50 pages per document
+                      • 100 pages per document
                       • Ability to communicate with a document using voice
                       • Ability to compress a document to create a summary
                       • Higher quality and faster responses
@@ -102,8 +122,8 @@ files_already_exist = File already exsist!
 files_pdf_only_warninig = The file must be in pdf format!
 files_saved = File saved <b>{$fileName}</b>
 files_file_option = File - <b>{$file}</b>
-files_next = ▶ Next 
-files_prev = ◀ Prev 
+files_next = ▶ 
+files_prev = ◀
 
 # CHAT
 chat_enter = 💬 Entering chat with file <b>{$fileName}</b>:
@@ -119,6 +139,7 @@ chat_leave = ❌ Leave chat
 chat_loader = 💡 Processing request... 
 prepare_doc = ⏱️ Preparing the document...
 chat_assistant = 🤖 <b>Assistant answer:</b>
+chat_continue = <b>Continue:</b>
 
 
 # MENUS
@@ -136,7 +157,7 @@ subscription_menu_text = Choose what type of subscription you want:
 
 language_menu_text = 🌐 Default language
 
-language_default = The default language is English🇺🇸
+language_default = The default language is English - 🇺🇸
 
 summarize_button = ✂️ Summarize 
 
@@ -154,3 +175,4 @@ tooold_message = Apologies for inconvenience! Your recent action in the app coul
 
 refain_message = ⚠️ Please refrain from performing repetitive actions or spamming the bot! 
 
+max_file_size_warning = ⚠️ The maximum file size should not exceed 20 MB
