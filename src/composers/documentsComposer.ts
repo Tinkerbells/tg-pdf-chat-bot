@@ -25,10 +25,14 @@ documentComposer.on([":document"], async (ctx) => {
   //   );
   //   return;
   // }
+  if (ctx.msg.document.file_size > 20 * 1024 * 1024) {
+    await ctx.reply(ctx.t("max_file_size_warning"));
+    return;
+  }
+
   const subscription = new Subscription(ctx.from.id.toString());
 
   const isSubscribed = await subscription.isSubscribed();
-
   const document = await ctx.getFile();
   const fileName = ctx.message.document.file_name;
   const fileKey = document.file_id;
@@ -47,11 +51,11 @@ documentComposer.on([":document"], async (ctx) => {
     const uniqueFile = await db.file.findFirst({
       where: {
         name: file.name,
+        sessionId: ctx.from.id.toString(),
       },
     });
 
     if (uniqueFile) {
-      console.log("File already exsist");
       await ctx.reply(ctx.t("files_already_exist"));
     } else {
       ctx.session.file = file;

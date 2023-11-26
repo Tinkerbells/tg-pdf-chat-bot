@@ -1,24 +1,19 @@
 import { Menu, MenuRange } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { Subscription } from "../subscription";
-import { OpenAIAdapter } from "../openai";
 import { PdfHandler } from "../pdf";
-import { File } from "@prisma/client";
 import { FileType } from "../prismaAdapter";
 
-const fileMenu = new Menu<BotContext>("file");
+export const fileMenu = new Menu<BotContext>("file");
 
 fileMenu.dynamic(async (ctx, range) => {
-  // const openai = new OpenAIAdapter();
   const pdf = new PdfHandler(ctx);
   const subscription = new Subscription(ctx.from.id.toString());
   const isSubscribe = await subscription.isSubscribed();
-
   const id = ctx.session.file.fileId;
+  const file = ctx.session.files.find((f) => f.fileId === id);
   range.text(ctx.t("chat_button"), async (ctx) => {
-    const files = ctx.session.files;
-    const { name } = files.find((f) => f.fileId === id);
-    ctx.reply(ctx.t("chat_enter", { fileName: name }), {
+    ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
       parse_mode: "HTML",
     });
     await ctx.conversation.enter("chat");
@@ -33,8 +28,10 @@ fileMenu.dynamic(async (ctx, range) => {
         const translateText =
           ctx.session.__language_code === "ru" ? true : false;
         const text = await pdf.summarize(id, translateText);
-        await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
+        msg.delete();
+        await ctx.reply(ctx.t("chat_assistant") + "\n" + text, {
           parse_mode: "HTML",
+          reply_markup: fileMenu,
         });
       })
       .row();
@@ -62,12 +59,15 @@ fileMenu.dynamic(async (ctx, range) => {
   //     }
   //   })
   //   .row()
-  range.back(ctx.t("back"), async (ctx) => {
-    await ctx.editMessageText(
-      ctx.t("files_menu_text", { count: ctx.session.files.length }),
-      { parse_mode: "HTML" },
-    );
-  });
+  if (!ctx.session.hideBack) {
+    range.text(ctx.t("back"), async (ctx) => {
+      await ctx.editMessageText(
+        ctx.t("files_menu_text", { count: ctx.session.files.length }),
+        { parse_mode: "HTML" },
+      );
+      ctx.menu.nav("files");
+    });
+  }
 });
 
 export const filesMenu = new Menu<BotContext>("files");
@@ -76,9 +76,8 @@ const limit = 13;
 
 filesMenu.dynamic((ctx, range) => {
   const current = ctx.session.currentFilesPage;
-  let files = ctx.session.files.concat(ctx.session.files);
+  let files = ctx.session.files;
   const maxPages = Math.ceil(files.length / limit);
-  const length = files.length;
   createFilesMenu(range, files, current);
   getPagination(ctx, range, current, maxPages);
   return range;
@@ -91,11 +90,11 @@ async function createFilesMenu(
 ) {
   files.slice(current * limit - limit, current * limit).forEach((file) => {
     range
-      .submenu("📄" + " " + file.name, "file", async (ctx) => {
+      .text("📄" + " " + file.name, async (ctx) => {
         ctx.session.file.fileId = file.fileId;
         await ctx.editMessageText(
           ctx.t("files_file_option", { file: file.name }),
-          { parse_mode: "HTML" },
+          { parse_mode: "HTML", reply_markup: fileMenu },
         );
       })
       .row();
@@ -123,5 +122,3 @@ async function getPagination(
   }
   return range;
 }
-
-filesMenu.register(fileMenu);

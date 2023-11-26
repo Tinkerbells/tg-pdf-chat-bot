@@ -16,6 +16,7 @@ export type SessionType = {
   filesUploadTimeout?: Date | null;
   showAdvice: boolean;
   currentFilesPage?: number;
+  hideBack?: boolean;
 };
 
 // Prisma adapter types

@@ -71,7 +71,7 @@ export class Subscription {
     });
 
     const updatedSubs = subscriptions.filter(async (sub) => {
-      const diff = getDateDifference(sub.createdAt, sub.endedAt);
+      const diff = getDateDifference(new Date(), sub.endedAt);
       if (diff < 0) {
         await db.subscription.delete({
           where: {
@@ -92,7 +92,7 @@ export class Subscription {
 
     const duration = subscriptions
       .map((sub) => {
-        const diff = getDateDifference(sub.createdAt, sub.endedAt);
+        const diff = getDateDifference(new Date(), sub.endedAt);
         return diff;
       })
       .reduce((a, b) => a + b, 0);

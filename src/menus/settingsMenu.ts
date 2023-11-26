@@ -11,7 +11,7 @@ settingsMenu.dynamic(async (ctx, range) => {
 
   range
     .submenu(ctx.t("language_menu_text"), "language", async (ctx) => {
-      await ctx.editMessageText(ctx.t("language_menu_text"));
+      await ctx.editMessageText(ctx.t("language_default"));
     })
     .row();
   range

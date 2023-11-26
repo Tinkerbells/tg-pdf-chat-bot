@@ -32,7 +32,6 @@ export async function deleteFiles(
     deletedFilesId.forEach(async (id) => {
       try {
         await db.$transaction([
-          db.message.deleteMany({ where: { fileId: id } }),
           db.document.deleteMany({ where: { fileId: id } }),
           db.file.delete({ where: { id: id } }),
         ]);

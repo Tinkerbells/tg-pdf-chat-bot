@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { OpenAI as AI } from "langchain/llms/openai";
-import fs from "fs";
-import { MessageType } from "../types/openai";
+import axios from "axios";
 import { env } from "../env";
 import { Document } from "langchain/document";
 import { db } from "../db";
@@ -30,12 +29,20 @@ export class OpenAIAdapter {
   }
 
   async transcription(filepath: string) {
+    interface Response {
+      text: string;
+    }
     try {
-      const response = await this.openai.audio.transcriptions.create({
-        model: "whisper-1",
-        file: fs.createReadStream(filepath),
-      });
-      return response.text;
+      const response = await axios.post<Response>(
+        `${env.API_URL}/get_transcription`,
+        {
+          file_path: filepath,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      );
+      return response.data.text;
     } catch (error) {
       await sendLogs(this.ctx, JSON.stringify(error));
       logger.error(`Error while transcription: ${error}`);

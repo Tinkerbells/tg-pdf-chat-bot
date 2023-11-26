@@ -2,9 +2,11 @@ import { Menu } from "@grammyjs/menu";
 import { BotContext } from "..";
 import { Subscription } from "../subscription";
 import { PdfHandler } from "../pdf";
+import { fileMenu } from "./filesMenu";
 export const interactMenu = new Menu<BotContext>("interact");
 
 interactMenu.dynamic(async (ctx, range) => {
+  ctx.session.hideBack = true;
   const sessionId = ctx.from.id.toString();
   const pdf = new PdfHandler(ctx, ctx.session.downloadFilepath);
   const subscription = new Subscription(sessionId);
@@ -42,6 +44,7 @@ interactMenu.dynamic(async (ctx, range) => {
   };
 
   range.text(ctx.t("chat_button"), async (ctx) => {
+    await ctx.deleteMessage();
     const msg = await ctx.reply(ctx.t("prepare_doc"));
     const pages = await pdf.parse();
     const pagesValidaton = await validatePages(pages.length);
@@ -54,7 +57,8 @@ interactMenu.dynamic(async (ctx, range) => {
     }
     const id = await pdf.save(file, sessionId);
     await pdf.store(pages, id);
-    await msg.editText(ctx.t("chat_enter", { fileName: file.name }), {
+    await msg.delete();
+    await ctx.reply(ctx.t("chat_enter", { fileName: file.name }), {
       parse_mode: "HTML",
     });
     ctx.session.file.fileId = id;
@@ -66,6 +70,7 @@ interactMenu.dynamic(async (ctx, range) => {
   } else {
     range
       .text(ctx.t("summarize_button"), async (ctx) => {
+        await ctx.deleteMessage();
         const msg = await ctx.reply(ctx.t("prepare_doc"));
         const pages = await pdf.parse();
         const pagesValidaton = await validatePages(pages.length);
@@ -82,8 +87,10 @@ interactMenu.dynamic(async (ctx, range) => {
         const translateText =
           ctx.session.__language_code === "ru" ? true : false;
         const text = await pdf.summarize(id, translateText);
-        await msg.editText(ctx.t("chat_assistant") + "\n" + text, {
+        await msg.delete();
+        await ctx.reply(ctx.t("chat_assistant") + "\n" + text, {
           parse_mode: "HTML",
+          reply_markup: fileMenu,
         });
       })
       .row();
@@ -91,6 +98,7 @@ interactMenu.dynamic(async (ctx, range) => {
 
   range
     .text(ctx.t("save_button"), async (ctx) => {
+      await ctx.deleteMessage();
       const msg = await ctx.reply(ctx.t("prepare_doc"));
       const pages = await pdf.parse();
       const pagesValidaton = await validatePages(pages.length);
@@ -103,7 +111,7 @@ interactMenu.dynamic(async (ctx, range) => {
       }
       const id = await pdf.save(file, sessionId);
       await pdf.store(pages, id);
-      await msg.editText(ctx.t("files_saved", { fileName: file.name }), {
+      await ctx.reply(ctx.t("files_saved", { fileName: file.name }), {
         parse_mode: "HTML",
       });
       ctx.session.file.fileId = id;

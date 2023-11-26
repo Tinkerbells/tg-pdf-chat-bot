@@ -5,6 +5,7 @@ import { settingsMenu } from "../menus";
 export const settingsComposer = new Composer<BotContext>();
 
 settingsComposer.command("settings", async (ctx) => {
+  ctx.session.hideBack = false;
   ctx.reply(ctx.t("settings_menu_text"), {
     reply_markup: settingsMenu,
   });

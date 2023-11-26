@@ -84,6 +84,18 @@ export const chat = async (
       pdf.chat(message, fileId, translateText),
     );
 
+    if (result.length > 4096) {
+      await ctx.api.editMessageText(
+        msg.chat.id,
+        msg.message_id,
+        ctx.t("chat_assistant") + "\n" + result.splice(0, 4000) + "...",
+      );
+      await ctx.reply(ctx.t("chat_continue") + "\n" + result.splice(4000), {
+        reply_markup: keyboard,
+        parse_mode: "HTML",
+      });
+      continue;
+    }
     await ctx.api.editMessageText(
       msg.chat.id,
       msg.message_id,

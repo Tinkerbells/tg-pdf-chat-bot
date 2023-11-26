@@ -5,7 +5,6 @@ import { logger } from "../logger";
 import type { FileType } from "../prismaAdapter";
 import { PrismaVectorStore } from "langchain/vectorstores/prisma";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { Document, Prisma } from "@prisma/client";
 import { Ollama } from "langchain/llms/ollama";
 import translate from "translate";
@@ -17,39 +16,51 @@ import {
 } from "langchain/chains";
 import { Document as langDocument } from "langchain/document";
 import { PromptTemplate } from "langchain/prompts";
-import { env } from "../env";
-import { HuggingFaceInferenceEmbeddings } from "langchain/embeddings/hf";
-import { OpenAI } from "langchain/llms/openai";
+import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
 import { BotContext } from "..";
 import { sendLogs } from "../utils";
 
 export class PdfHandler {
   private filePath: string;
-  private model: Ollama;
-  private embeddings: HuggingFaceInferenceEmbeddings;
+  private main: Ollama;
+  private context: Ollama;
+  private embeddings: HuggingFaceTransformersEmbeddings;
   private ctx: BotContext;
-  // private model: OpenAI;
   constructor(ctx: BotContext, filePath?: string) {
-    const modelName = "orca2:13b";
-    const baseUrl = "http://localhost:11434";
+    const main = {
+      name: "orca2:13b",
+      url: "http://localhost:11434",
+    };
+    const context = {
+      name: "mistral",
+      url: "http://localhost:11435",
+    };
     this.ctx = ctx;
-    // const embeddings = new OpenAIEmbeddings({
-    //   openAIApiKey: env.OPENAI_API_KEY,
-    // });
-    const embeddings = new HuggingFaceInferenceEmbeddings();
+    const embeddings = new HuggingFaceTransformersEmbeddings({
+      modelName: "Xenova/all-MiniLM-L6-v2",
+    });
 
     this.embeddings = embeddings;
     this.filePath = filePath;
-    // const model = new OpenAI({
-    //   modelName: "gpt-3.5-turbo",
-    //   temperature: 0,
-    //   openAIApiKey: env.OPENAI_API_KEY,
-    // });
-    const model = new Ollama({
-      baseUrl: baseUrl,
-      model: modelName,
+
+    const mainModel = new Ollama({
+      baseUrl: main.url,
+      model: main.name,
+      temperature: 0,
+      topK: 0,
+      topP: 0.95,
     });
-    this.model = model;
+
+    const contextModel = new Ollama({
+      baseUrl: context.url,
+      model: context.name,
+      temperature: 0,
+      topK: 0,
+      topP: 0.95,
+      numCtx: 8096,
+    });
+    this.main = mainModel;
+    this.context = contextModel;
   }
   check() {
     return this.filePath.split(".").pop().toLowerCase() === "pdf";
@@ -165,8 +176,23 @@ export class PdfHandler {
       },
     );
 
+    const template = `Use the following pieces of context to answer the question at the end.
+If you don't know the answer, just say that you don't know, don't try to make
+up an answer. There is no need to tell how you find the answer or steps, just tell the answer itself.
+
+{context}
+
+
+Question: {question}
+
+Helpful Answer:`;
+
+    const prompt = PromptTemplate.fromTemplate(template);
+
     const chain = new RetrievalQAChain({
-      combineDocumentsChain: loadQAStuffChain(this.model),
+      combineDocumentsChain: loadQAStuffChain(this.main, {
+        prompt,
+      }),
       retriever: vectorStore.asRetriever(),
       inputKey: "question",
     });
@@ -181,6 +207,7 @@ export class PdfHandler {
       if (translateText) {
         text = await translate(text, "ru");
       }
+
       return text;
     } catch (error) {
       await sendLogs(this.ctx, JSON.stringify(error));
@@ -210,7 +237,7 @@ BULLET POINT SUMMARY:`;
 
     const prompt = PromptTemplate.fromTemplate(template);
 
-    const chain = loadSummarizationChain(this.model, {
+    const chain = loadSummarizationChain(this.context, {
       type: "stuff",
       prompt: prompt,
       verbose: true,
@@ -236,7 +263,9 @@ BULLET POINT SUMMARY:`;
     let { pageContent } = page;
     pageContent = pageContent.replace(/\n/g, "");
     // split the docs
-    const splitter = new RecursiveCharacterTextSplitter({ chunkSize: 256 });
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 256,
+    });
     try {
       const docs = await splitter.createDocuments([pageContent]);
       return docs;

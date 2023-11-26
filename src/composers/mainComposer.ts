@@ -1,12 +1,16 @@
 import { Composer } from "grammy";
 import { BotContext } from "..";
 import { logger } from "../logger";
-import { startMenu } from "../menus";
+import { languageMenu } from "../menus";
 
 export const mainComposer = new Composer<BotContext>();
 
 mainComposer.command("start", async (ctx) => {
-  await ctx.reply(ctx.t("start"), { reply_markup: startMenu });
+  ctx.session.hideBack = true;
+  await ctx.reply(ctx.t("start"), {
+    parse_mode: "HTML",
+    reply_markup: languageMenu,
+  });
   logger.info(`New user: ${ctx.from.username} - ${ctx.from.id}`);
 });
 

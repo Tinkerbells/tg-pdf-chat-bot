@@ -16,14 +16,6 @@ import {
   createConversation,
 } from "@grammyjs/conversations";
 import { chat } from "./conversations";
-import {
-  disableAdviceMenu,
-  filesMenu,
-  interactMenu,
-  providersMenu,
-  settingsMenu,
-  startMenu,
-} from "./menus";
 import { env } from "./env";
 import { db, redis } from "./db";
 import { getSessionKey, sendLogs } from "./utils";
@@ -42,12 +34,13 @@ import {
 import { INIT_SESSION } from "./consts";
 import { deleteFiles, ignoreOld } from "./middlewares";
 import { logger } from "./logger";
+import { rootMenu } from "./menus";
 
 export type BotContext = HydrateFlavor<
   FileFlavor<Context> &
     SessionFlavor<SessionType> &
     I18nFlavor &
-    ConversationFlavor
+    ConversationFlavor & { hideBack: boolean }
 >;
 
 type BotApi = FileApiFlavor<Api>;
@@ -83,7 +76,7 @@ bot.use(
 );
 
 // custom middlewares
-bot.use(ignoreOld);
+// bot.use(ignoreOld);
 bot.use(deleteFiles);
 
 // ratelimiter;
@@ -106,25 +99,23 @@ bot.use(
 bot.use(i18n);
 
 bot.use(conversations());
+//
+// bot.use(settingsMenu);
+// bot.use(providersMenu);
+// bot.use(startMenu);
+// bot.use(disableAdviceMenu);
 
-bot.use(settingsMenu);
-bot.use(providersMenu);
-bot.use(startMenu);
-bot.use(disableAdviceMenu);
-
-// composers and conversations
-bot.use(leaveComposer);
 bot.use(createConversation(chat));
+
+// bot.use(fileMenu);
+// bot.use(filesMenu);
+bot.use(rootMenu);
+
+bot.use(leaveComposer);
 bot.use(mainComposer);
 bot.use(settingsComposer);
-bot.command("chat", (ctx) => {
-  console.log(ctx.chat.id);
-});
+
 bot.use(paymentComposer);
-
-bot.use(filesMenu);
-
-bot.use(interactMenu);
 
 bot.use(filesComposer);
 
