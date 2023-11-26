@@ -15,7 +15,6 @@ model Session {
   id            String         @id @unique
   value         String
   file          File[]
-  messages      Message[]
   subscriptions Subscription[]
 }
 
@@ -31,8 +30,7 @@ model File {
   id   String @id @default(cuid())
   name String
 
-  url      String
-  messages Message[]
+  url String
 
   documentId String?
   documents  Document[]
@@ -40,23 +38,6 @@ model File {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime @default(dbgenerated("NOW() + interval '30 days'"))
-
-  session   Session? @relation(fields: [sessionId], references: [id])
-  sessionId String?
-}
-
-model Message {
-  id String @id @default(cuid())
-
-  text String @db.Text()
-
-  isUserMessage Boolean
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  file   File   @relation(fields: [fileId], references: [id])
-  fileId String
 
   session   Session? @relation(fields: [sessionId], references: [id])
   sessionId String?
@@ -70,7 +51,7 @@ model Subscription {
   endedAt   DateTime
   priceId   Int
   maxFiles  Int      @default(25)
-  maxPages  Int      @default(50)
+  maxPages  Int      @default(100)
   session   Session? @relation(fields: [sessionId], references: [id])
   sessionId String?
 }
